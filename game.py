@@ -162,14 +162,14 @@ def visit_room(room):
 def make_accusation():
     print_output("\nWho do you accuse as the murderer?")
     for idx, s in enumerate(game_state["suspects"], 1):
-    print_output(f"{idx}. {s['name']}")
-    print_output("Enter the number of the suspect:")
+        print_output(f"{idx}. {s['name']}")
+        print_output("Enter the number of the suspect:")
 
 def process_accusation(cmd):
     try:
-    choice = int(cmd)
+        choice = int(cmd)
     except:
-    print_output("Please enter a number.")
+        print_output("Please enter a number.")
     return
     if 1 <= choice <= len(game_state["suspects"]):
         accused = game_state["suspects"][choice - 1]
@@ -195,10 +195,10 @@ def handle_input(cmd):
         init_game()
         return
 
-        if game_state["menu_state"] == "main":
-            if cmd == "1":
-                game_state["menu_state"] = "room"
-                show_room_menu()
+    if game_state["menu_state"] == "main":
+        if cmd == "1":
+            game_state["menu_state"] = "room"
+            show_room_menu()
             elif cmd == "2":
                 view_notes()
             elif cmd == "3":
@@ -207,39 +207,39 @@ def handle_input(cmd):
             elif cmd == "4":
                 game_state["menu_state"] = "accuse"
                 make_accusation()
-            else:
-                print_output("Invalid input. Please enter a valid number.")
-                show_main_menu()
+        else:
+            print_output("Invalid input. Please enter a valid number.")
+            show_main_menu()
 
-            elif game_state["menu_state"] == "room":
-                if cmd.isdigit():
-                    idx = int(cmd) - 1
-                    if 0 <= idx < len(game_state["rooms"]):
-                        game_state["menu_state"] = "main"
-                        visit_room(game_state["rooms"][idx])
-                    else:
-                        print_output("Invalid room selection.")
-                        show_room_menu()
-                    else:
-                        print_output("Invalid room input. Please enter a number.")
-                        show_room_menu()
+    elif game_state["menu_state"] == "room":
+        if cmd.isdigit():
+            idx = int(cmd) - 1
+        if 0 <= idx < len(game_state["rooms"]):
+            game_state["menu_state"] = "main"
+            visit_room(game_state["rooms"][idx])
+        else:
+            print_output("Invalid room selection.")
+            show_room_menu()
+        else:
+            print_output("Invalid room input. Please enter a number.")
+            show_room_menu()
 
-                    elif game_state["menu_state"] == "accuse":
-                        process_accusation(cmd)
+    elif game_state["menu_state"] == "accuse":
+        process_accusation(cmd)
 
-                    elif game_state["menu_state"] == "talk":
-                        if cmd.isdigit():
-                            idx = int(cmd) - 1
-                            if 0 <= idx < len(game_state["suspects"]):
-                                talk_to_suspect(game_state["suspects"][idx])
-                                game_state["menu_state"] = "main"
-                                show_main_menu()
-                            else:
-                                print_output("Invalid suspect.")
-                                show_suspect_menu()
-                            else:
-                                print_output("Please enter the number of the suspect.")
-                                show_suspect_menu()
+    elif game_state["menu_state"] == "talk":
+        if cmd.isdigit():
+            idx = int(cmd) - 1
+        if 0 <= idx < len(game_state["suspects"]):
+            talk_to_suspect(game_state["suspects"][idx])
+            game_state["menu_state"] = "main"
+            show_main_menu()
+        else:
+            print_output("Invalid suspect.")
+            show_suspect_menu()
+        else:
+            print_output("Please enter the number of the suspect.")
+            show_suspect_menu()
 
 # --- New Dialogue System ---
 def show_suspect_menu():
