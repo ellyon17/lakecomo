@@ -1,6 +1,8 @@
 from js import document
 import random
 from collections import defaultdict
+from pyodide.ffi import create_proxy
+
 
 # --- Data Definitions ---
 areas = {
@@ -230,10 +232,14 @@ def on_enter(e):
 # --- Run ---
 def start_game():
     try:
-        document.getElementById('submit').addEventListener('click', on_submit)
-        document.getElementById('command').addEventListener('keypress', on_enter)
+        print_output("🟢 start_game called")
+        submit_proxy = create_proxy(on_submit)
+        enter_proxy = create_proxy(on_enter)
+        document.getElementById('submit').addEventListener('click', submit_proxy)
+        document.getElementById('command').addEventListener('keypress', enter_proxy)
         init_game()
     except Exception as e:
-        print("Startup error:", e)
+        print_output(f"❌ Startup error: {e}")
+
 
 start_game()
