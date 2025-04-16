@@ -199,14 +199,14 @@ def handle_input(cmd):
         if cmd == "1":
             game_state["menu_state"] = "room"
             show_room_menu()
-            elif cmd == "2":
-                view_notes()
-            elif cmd == "3":
-                game_state["menu_state"] = "talk"
-                show_suspect_menu()    
-            elif cmd == "4":
-                game_state["menu_state"] = "accuse"
-                make_accusation()
+        elif cmd == "2":
+            view_notes()
+        elif cmd == "3":
+            game_state["menu_state"] = "accuse"
+            make_accusation()
+        elif cmd == "4":
+            game_state["menu_state"] = "talk"
+            show_suspect_menu()
         else:
             print_output("Invalid input. Please enter a valid number.")
             show_main_menu()
@@ -214,12 +214,12 @@ def handle_input(cmd):
     elif game_state["menu_state"] == "room":
         if cmd.isdigit():
             idx = int(cmd) - 1
-        if 0 <= idx < len(game_state["rooms"]):
-            game_state["menu_state"] = "main"
-            visit_room(game_state["rooms"][idx])
-        else:
-            print_output("Invalid room selection.")
-            show_room_menu()
+            if 0 <= idx < len(game_state["rooms"]):
+                game_state["menu_state"] = "main"
+                visit_room(game_state["rooms"][idx])
+            else:
+                print_output("Invalid room selection.")
+                show_room_menu()
         else:
             print_output("Invalid room input. Please enter a number.")
             show_room_menu()
@@ -230,13 +230,13 @@ def handle_input(cmd):
     elif game_state["menu_state"] == "talk":
         if cmd.isdigit():
             idx = int(cmd) - 1
-        if 0 <= idx < len(game_state["suspects"]):
-            talk_to_suspect(game_state["suspects"][idx])
-            game_state["menu_state"] = "main"
-            show_main_menu()
-        else:
-            print_output("Invalid suspect.")
-            show_suspect_menu()
+            if 0 <= idx < len(game_state["suspects"]):
+                talk_to_suspect(game_state["suspects"][idx])
+                game_state["menu_state"] = "main"
+                show_main_menu()
+            else:
+                print_output("Invalid suspect.")
+                show_suspect_menu()
         else:
             print_output("Please enter the number of the suspect.")
             show_suspect_menu()
