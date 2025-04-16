@@ -53,12 +53,6 @@ def print_output(text):
     out.innerHTML += text + "<br/>"
     out.scrollTop = out.scrollHeight
 
-try:
-    print_output("✅ game.py has loaded!")
-except Exception as e:
-    print("⚠️ Error printing to output:", e)
-
-
 def clear_output():
     document.getElementById('output').innerHTML = ""
 
@@ -230,8 +224,9 @@ def on_submit(e):
 
 # --- Start the game ---
 def start_game():
+#    print_output("✅ game.py has loaded!")
     document.getElementById('submit').addEventListener('click', on_submit)
     init_game()
 
-# Call start_game once the page is ready
+# Defer until DOM is ready
 start_game()
