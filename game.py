@@ -2,6 +2,8 @@ from js import document
 import random
 from collections import defaultdict
 
+print_output("✅ Python loaded and running!")
+
 # --- Data Definitions ---
 areas = {
     "Villa Interior": ["Library", "Dining Room", "Study"],
@@ -223,5 +225,9 @@ def on_submit(e):
     handle_input(cmd)
 
 # --- Start the game ---
-document.getElementById('submit').addEventListener('click', on_submit)
-init_game()
+def start_game():
+    document.getElementById('submit').addEventListener('click', on_submit)
+    init_game()
+
+# Call start_game once the page is ready
+start_game()
