@@ -47,6 +47,39 @@ game_state = {
     "initialized": False
 }
 
+def generate_mystery():
+    murderer = random.choice(game_state["suspects"])
+    murderer["is_murderer"] = True
+    game_state["murderer"] = murderer
+    game_state["cause"] = random.choice(causes_of_death)
+    game_state["motive"] = random.choice(motives)
+
+    time_slots = ["6AM", "9AM", "12PM", "3PM", "6PM", "9PM", "12AM", "3AM", "5AM"]
+
+    for s in game_state["suspects"]:
+        available_rooms = game_state["rooms"][:]
+        random.shuffle(available_rooms)
+        s["schedule"] = []
+        for i, t in enumerate(time_slots):
+            room = available_rooms[i % len(available_rooms)]
+            s["schedule"].append({"room": room["name"], "time": t})
+            room["occupants"].append({"suspect": s["name"], "time": t})
+
+        s["goal"] = random.choice(motives)
+        s["secrets"].append(random.choice([
+            "Had a feud with the victim",
+            "Was hiding evidence",
+            "In debt",
+            "Secret affair"
+        ]))
+        s["alibi"] = random.choice([
+            "Claims to have been in the kitchen",
+            "Says they were outside",
+            "No one saw them",
+            "Alibi checked out"
+        ])
+
+
 # --- Utility Functions ---
 def print_output(text):
     try:
