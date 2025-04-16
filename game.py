@@ -46,7 +46,8 @@ game_state = {
     "accused": False,
     "in_accusation": False,
     "interactions": defaultdict(list),
-    "initialized": False
+    "initialized": False,
+    "menu_state": "main"
 }
 
 # --- Utility Functions ---
@@ -194,25 +195,35 @@ def handle_input(cmd):
         init_game()
         return
 
-    if cmd == "1":
-        show_room_menu()
-    elif cmd == "2":
-        view_notes()
-    elif cmd == "3":
-        game_state["in_accusation"] = True
-        make_accusation()
-    elif game_state["in_accusation"]:
-        process_accusation(cmd)
-    elif cmd.isdigit():
-        idx = int(cmd) - 1
-        if 0 <= idx < len(game_state["rooms"]):
-            visit_room(game_state["rooms"][idx])
-        else:
-            print_output("Invalid room selection.")
+    if game_state["menu_state"] == "main":
+        if cmd == "1":
+            game_state["menu_state"] = "room"
             show_room_menu()
-    else:
-        print_output("Invalid input. Please enter a valid number.")
-        show_main_menu()
+        elif cmd == "2":
+            view_notes()
+        elif cmd == "3":
+            game_state["menu_state"] = "accuse"
+            make_accusation()
+        else:
+            print_output("Invalid input. Please enter a valid number.")
+            show_main_menu()
+
+    elif game_state["menu_state"] == "room":
+        if cmd.isdigit():
+            idx = int(cmd) - 1
+            if 0 <= idx < len(game_state["rooms"]):
+                game_state["menu_state"] = "main"
+                visit_room(game_state["rooms"][idx])
+            else:
+                print_output("Invalid room selection.")
+                show_room_menu()
+        else:
+            print_output("Invalid room input. Please enter a number.")
+            show_room_menu()
+
+    elif game_state["menu_state"] == "accuse":
+        process_accusation(cmd)
+
 
 def on_submit(e):
     try:
