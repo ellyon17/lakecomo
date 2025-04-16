@@ -283,4 +283,4 @@ def start_game():
         print_output(f"❌ Startup error: {e}")
 
 
-        start_game()
+start_game()
