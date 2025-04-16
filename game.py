@@ -2,8 +2,6 @@ from js import document
 import random
 from collections import defaultdict
 
-print_output("✅ Python loaded and running!")
-
 # --- Data Definitions ---
 areas = {
     "Villa Interior": ["Library", "Dining Room", "Study"],
@@ -54,6 +52,8 @@ def print_output(text):
     out = document.getElementById('output')
     out.innerHTML += text + "<br/>"
     out.scrollTop = out.scrollHeight
+
+print_output("✅ Python loaded and running!")
 
 def clear_output():
     document.getElementById('output').innerHTML = ""
