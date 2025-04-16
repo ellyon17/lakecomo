@@ -248,27 +248,27 @@ def show_suspect_menu():
         print_output(f"{idx}. {s['name']}")
         print_output("Enter the number of the suspect:")
 
-        def talk_to_suspect(suspect):
-            print_output(f"You approach {suspect['name']}.")
-            print_output(f"{suspect['name']}: \"{suspect['dialogue_intro']}\"")
-            game_state["notes"].append(f"Talked to {suspect['name']}: {suspect['dialogue_intro']}")
+def talk_to_suspect(suspect):
+    print_output(f"You approach {suspect['name']}.")
+    print_output(f"{suspect['name']}: \"{suspect['dialogue_intro']}\"")
+    game_state["notes"].append(f"Talked to {suspect['name']}: {suspect['dialogue_intro']}")
 
 
 
-            def on_submit(e):
-                try:
-                    cmd = document.getElementById('command').value.strip()
-                    document.getElementById('command').value = ''
-                    if not cmd:
-                        return
-                        print_output(f"> {cmd}")
-                        handle_input(cmd)
-                    except Exception as e:
-                        print_output(f"Submission error: {e}")
+def on_submit(e):
+    try:
+        cmd = document.getElementById('command').value.strip()
+        document.getElementById('command').value = ''
+        if not cmd:
+        return
+        print_output(f"> {cmd}")
+        handle_input(cmd)
+    except Exception as e:
+        print_output(f"Submission error: {e}")
 
-                        def on_enter(e):
-                            if e.key == "Enter":
-                                on_submit(e)
+def on_enter(e):
+    if e.key == "Enter":
+    on_submit(e)
 
 # --- Run ---
 def start_game():
