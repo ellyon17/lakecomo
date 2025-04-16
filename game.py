@@ -43,7 +43,8 @@ game_state = {
     "visited": [],
     "accused": False,
     "in_accusation": False,
-    "interactions": defaultdict(list)  # { (room, time): [suspect1, suspect2, ...] }
+    "interactions": defaultdict(list),
+    "initialized": False
 }
 
 # --- Utility Functions ---
@@ -67,6 +68,7 @@ def init_game():
     find_overlaps()
     show_intro()
     show_main_menu()
+    game_state["initialized"] = True
 
 def generate_mystery():
     murderer = random.choice(game_state["suspects"])
@@ -116,28 +118,45 @@ def show_intro():
     print_output("The investigation begins at 7AM on June 11th, 2025.")
 
 def show_main_menu():
+    print_output("\nMain Menu:")
+    print_output("1. Visit a room")
+    print_output("2. View your notes")
+    print_output("3. Make an accusation")
+    print_output("Enter the number of your choice:")
+
+
+def handle_input(cmd):
+    if not game_state["initialized"]:
+        init_game()
+        return
+
+    if cmd == "1":
+        show_room_menu()
+    elif cmd == "2":
+        view_notes()
+    elif cmd == "3":
+        game_state["in_accusation"] = True
+        make_accusation()
+    elif game_state["in_accusation"]:
+        process_accusation(cmd)
+    elif cmd.isdigit():
+        idx = int(cmd) - 1
+        if 0 <= idx < len(game_state["rooms"]):
+            visit_room(game_state["rooms"][idx])
+        else:
+            print_output("Invalid room selection.")
+            show_room_menu()
+    else:
+        print_output("Invalid input. Please enter a valid number.")
+        show_main_menu()
+
+
+def show_room_menu():
     print_output("\nWhere would you like to go?")
     for idx, room in enumerate(game_state["rooms"], 1):
         print_output(f"{idx}. {room['name']} ({room['area']})")
-    print_output(f"{len(game_state['rooms'])+1}. View your notes")
-    print_output(f"{len(game_state['rooms'])+2}. Make an accusation")
+    print_output("Enter the number of the room to visit:")
 
-def handle_input(cmd):
-    try:
-        choice = int(cmd)
-    except:
-        print_output("Please enter a number.")
-        return
-
-    if 1 <= choice <= len(game_state["rooms"]):
-        visit_room(game_state["rooms"][choice - 1])
-    elif choice == len(game_state["rooms"]) + 1:
-        view_notes()
-    elif choice == len(game_state["rooms"]) + 2:
-        game_state["in_accusation"] = True
-        make_accusation()
-    else:
-        print_output("Invalid choice. Try again.")
 
 def visit_room(room):
     if room["name"] in game_state["visited"]:
@@ -150,6 +169,7 @@ def visit_room(room):
         add_note(f"Clue from {room['name']}: {clue}")
     show_main_menu()
 
+
 def view_notes():
     print_output("\nYour Notes:")
     if not game_state["notes"]:
@@ -159,10 +179,13 @@ def view_notes():
             print_output(f"- {note}")
     show_main_menu()
 
+
 def make_accusation():
     print_output("\nWho do you accuse as the murderer?")
     for idx, s in enumerate(game_state["suspects"], 1):
         print_output(f"{idx}. {s['name']}")
+    print_output("Enter the number of the suspect:")
+
 
 def process_accusation(cmd):
     try:
@@ -180,6 +203,8 @@ def process_accusation(cmd):
         disable_input()
     else:
         print_output("Invalid suspect.")
+        make_accusation()
+
 
 def disable_input():
     btn = document.getElementById('submit')
@@ -187,16 +212,14 @@ def disable_input():
     btn.disabled = True
     document.getElementById('command').disabled = True
 
+
 def on_submit(e):
     cmd = document.getElementById('command').value.strip()
     document.getElementById('command').value = ''
     if not cmd:
         return
     print_output(f"> {cmd}")
-    if game_state['in_accusation']:
-        process_accusation(cmd)
-    else:
-        handle_input(cmd)
+    handle_input(cmd)
 
 # --- Start the game ---
 document.getElementById('submit').addEventListener('click', on_submit)
