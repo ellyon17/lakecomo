@@ -6,9 +6,9 @@ from pyodide.ffi import create_proxy
 
 # --- Data Definitions ---
 areas = {
-    "Villa Interior": ["Library", "Dining Room", "Study"],
-    "Gardens": ["Fountain", "Greenhouse", "Pathway"],
-    "Docks": ["Boathouse", "Pier", "Lighthouse"]
+"Villa Interior": ["Library", "Dining Room", "Study"],
+"Gardens": ["Fountain", "Greenhouse", "Pathway"],
+"Docks": ["Boathouse", "Pier", "Lighthouse"]
 }
 
 room_templates = []
@@ -21,33 +21,33 @@ for area, subrooms in areas.items():
             "discovered": False,
             "occupants": [],
             "item_found": None
-        })
+            })
 
-suspect_templates = [
-    {"name": "Doctor", "goal": None, "alibi": None, "secrets": [], "is_murderer": False, "knows_about": [], "schedule": [], "dialogue_intro": "I'm just here to help. I had nothing to do with the murder.", "dialogue_defensive": "How dare you! I'm a respected professional!"},
-    {"name": "Butler", "goal": None, "alibi": None, "secrets": [], "is_murderer": False, "knows_about": [], "schedule": [], "dialogue_intro": "It’s my job to keep things in order. Even in death.", "dialogue_defensive": "Surely you don’t think *I* would harm my employer?"},
-    {"name": "Chef", "goal": None, "alibi": None, "secrets": [], "is_murderer": False, "knows_about": [], "schedule": [], "dialogue_intro": "A good dish can bring peace. I only served food.", "dialogue_defensive": "My hands smell like garlic, not blood!"},
-    {"name": "Artist", "goal": None, "alibi": None, "secrets": [], "is_murderer": False, "knows_about": [], "schedule": [], "dialogue_intro": "Beauty is truth. I only paint what I see.", "dialogue_defensive": "Are you accusing me because I'm different?"}
-]
+        suspect_templates = [
+        {"name": "Doctor", "goal": None, "alibi": None, "secrets": [], "is_murderer": False, "knows_about": [], "schedule": [], "dialogue_intro": "I'm just here to help. I had nothing to do with the murder.", "dialogue_defensive": "How dare you! I'm a respected professional!"},
+        {"name": "Butler", "goal": None, "alibi": None, "secrets": [], "is_murderer": False, "knows_about": [], "schedule": [], "dialogue_intro": "It’s my job to keep things in order. Even in death.", "dialogue_defensive": "Surely you don’t think *I* would harm my employer?"},
+        {"name": "Chef", "goal": None, "alibi": None, "secrets": [], "is_murderer": False, "knows_about": [], "schedule": [], "dialogue_intro": "A good dish can bring peace. I only served food.", "dialogue_defensive": "My hands smell like garlic, not blood!"},
+        {"name": "Artist", "goal": None, "alibi": None, "secrets": [], "is_murderer": False, "knows_about": [], "schedule": [], "dialogue_intro": "Beauty is truth. I only paint what I see.", "dialogue_defensive": "Are you accusing me because I'm different?"}
+        ]
 
-causes_of_death = ["Poisoning", "Stabbing", "Blunt Force"]
-motives = ["Inheritance", "Revenge", "Love Triangle", "Cover-up"]
+        causes_of_death = ["Poisoning", "Stabbing", "Blunt Force"]
+        motives = ["Inheritance", "Revenge", "Love Triangle", "Cover-up"]
 
 # --- Game State ---
 game_state = {
-    "murderer": None,
-    "cause": None,
-    "motive": None,
-    "suspects": [],
-    "rooms": [],
-    "clues": {},
-    "notes": [],
-    "visited": [],
-    "accused": False,
-    "in_accusation": False,
-    "interactions": defaultdict(list),
-    "initialized": False,
-    "menu_state": "main"
+"murderer": None,
+"cause": None,
+"motive": None,
+"suspects": [],
+"rooms": [],
+"clues": {},
+"notes": [],
+"visited": [],
+"accused": False,
+"in_accusation": False,
+"interactions": defaultdict(list),
+"initialized": False,
+"menu_state": "main"
 }
 
 # --- Utility Functions ---
@@ -78,35 +78,35 @@ def generate_mystery():
             s["schedule"].append({"room": room["name"], "time": t})
             room["occupants"].append({"suspect": s["name"], "time": t})
 
-        s["goal"] = random.choice(motives)
-        s["secrets"].append(random.choice([
-            "Had a feud with the victim",
-            "Was hiding evidence",
-            "In debt",
-            "Secret affair"
-        ]))
-        s["alibi"] = random.choice([
-            "Claims to have been in the kitchen",
-            "Says they were outside",
-            "No one saw them",
-            "Alibi checked out"
-        ])
+            s["goal"] = random.choice(motives)
+            s["secrets"].append(random.choice([
+                "Had a feud with the victim",
+                "Was hiding evidence",
+                "In debt",
+                "Secret affair"
+                ]))
+            s["alibi"] = random.choice([
+                "Claims to have been in the kitchen",
+                "Says they were outside",
+                "No one saw them",
+                "Alibi checked out"
+                ])
 
-def place_clues():
-    for room in game_state["rooms"]:
-        hint = f"You find a clue hinting the motive may be: {random.choice(motives)}."
-        game_state["clues"][room["name"]] = hint
+            def place_clues():
+                for room in game_state["rooms"]:
+                    hint = f"You find a clue hinting the motive may be: {random.choice(motives)}."
+                    game_state["clues"][room["name"]] = hint
 
-def find_overlaps():
-    interaction_map = defaultdict(list)
-    for s in game_state["suspects"]:
-        for entry in s["schedule"]:
-            key = (entry["room"], entry["time"])
-            interaction_map[key].append(s["name"])
+                    def find_overlaps():
+                        interaction_map = defaultdict(list)
+                        for s in game_state["suspects"]:
+                            for entry in s["schedule"]:
+                                key = (entry["room"], entry["time"])
+                                interaction_map[key].append(s["name"])
 
-    for key, participants in interaction_map.items():
-        if len(participants) > 1:
-            game_state["interactions"][key] = participants
+                                for key, participants in interaction_map.items():
+                                    if len(participants) > 1:
+                                        game_state["interactions"][key] = participants
 
 # --- Game Setup ---
 def init_game():
@@ -137,7 +137,7 @@ def show_room_menu():
     print_output("\nWhere would you like to go?")
     for idx, room in enumerate(game_state["rooms"], 1):
         print_output(f"{idx}. {room['name']} ({room['area']})")
-    print_output("Enter the number of the room to visit:")
+        print_output("Enter the number of the room to visit:")
 
 def view_notes():
     print_output("\nYour Notes:")
@@ -146,7 +146,7 @@ def view_notes():
     else:
         for note in game_state["notes"]:
             print_output(f"- {note}")
-    show_main_menu()
+            show_main_menu()
 
 def visit_room(room):
     if room["name"] in game_state["visited"]:
@@ -157,26 +157,26 @@ def visit_room(room):
         clue = game_state["clues"][room["name"]]
         print_output(clue)
         game_state["notes"].append(f"Clue from {room['name']}: {clue}")
-    show_main_menu()
+        show_main_menu()
 
 def make_accusation():
     print_output("\nWho do you accuse as the murderer?")
     for idx, s in enumerate(game_state["suspects"], 1):
-        print_output(f"{idx}. {s['name']}")
+    print_output(f"{idx}. {s['name']}")
     print_output("Enter the number of the suspect:")
 
 def process_accusation(cmd):
     try:
-        choice = int(cmd)
+    choice = int(cmd)
     except:
-        print_output("Please enter a number.")
-        return
+    print_output("Please enter a number.")
+    return
     if 1 <= choice <= len(game_state["suspects"]):
         accused = game_state["suspects"][choice - 1]
-        if accused["is_murderer"]:
-            print_output(f"Correct! The {accused['name']} committed the murder by {game_state['cause']} due to {game_state['motive']}.")
-        else:
-            print_output(f"Wrong! The murderer was the {game_state['murderer']['name']}.")
+    if accused["is_murderer"]:
+        print_output(f"Correct! The {accused['name']} committed the murder by {game_state['cause']} due to {game_state['motive']}.")
+    else:
+        print_output(f"Wrong! The murderer was the {game_state['murderer']['name']}.")
         print_output("Game over. Refresh to play again.")
         disable_input()
     else:
@@ -195,50 +195,80 @@ def handle_input(cmd):
         init_game()
         return
 
-    if game_state["menu_state"] == "main":
-        if cmd == "1":
-            game_state["menu_state"] = "room"
-            show_room_menu()
-        elif cmd == "2":
-            view_notes()
-        elif cmd == "3":
-            game_state["menu_state"] = "accuse"
-            make_accusation()
-        else:
-            print_output("Invalid input. Please enter a valid number.")
-            show_main_menu()
-
-    elif game_state["menu_state"] == "room":
-        if cmd.isdigit():
-            idx = int(cmd) - 1
-            if 0 <= idx < len(game_state["rooms"]):
-                game_state["menu_state"] = "main"
-                visit_room(game_state["rooms"][idx])
-            else:
-                print_output("Invalid room selection.")
+        if game_state["menu_state"] == "main":
+            if cmd == "1":
+                game_state["menu_state"] = "room"
                 show_room_menu()
-        else:
-            print_output("Invalid room input. Please enter a number.")
-            show_room_menu()
+            elif cmd == "2":
+                view_notes()
+            elif cmd == "3":
+                game_state["menu_state"] = "talk"
+                show_suspect_menu()    
+            elif cmd == "4":
+                game_state["menu_state"] = "accuse"
+                make_accusation()
+            else:
+                print_output("Invalid input. Please enter a valid number.")
+                show_main_menu()
 
-    elif game_state["menu_state"] == "accuse":
-        process_accusation(cmd)
+            elif game_state["menu_state"] == "room":
+                if cmd.isdigit():
+                    idx = int(cmd) - 1
+                    if 0 <= idx < len(game_state["rooms"]):
+                        game_state["menu_state"] = "main"
+                        visit_room(game_state["rooms"][idx])
+                    else:
+                        print_output("Invalid room selection.")
+                        show_room_menu()
+                    else:
+                        print_output("Invalid room input. Please enter a number.")
+                        show_room_menu()
+
+                    elif game_state["menu_state"] == "accuse":
+                        process_accusation(cmd)
+
+                    elif game_state["menu_state"] == "talk":
+                        if cmd.isdigit():
+                            idx = int(cmd) - 1
+                            if 0 <= idx < len(game_state["suspects"]):
+                                talk_to_suspect(game_state["suspects"][idx])
+                                game_state["menu_state"] = "main"
+                                show_main_menu()
+                            else:
+                                print_output("Invalid suspect.")
+                                show_suspect_menu()
+                            else:
+                                print_output("Please enter the number of the suspect.")
+                                show_suspect_menu()
+
+# --- New Dialogue System ---
+def show_suspect_menu():
+    print_output("\nWho would you like to talk to?")
+    for idx, s in enumerate(game_state["suspects"], 1):
+        print_output(f"{idx}. {s['name']}")
+        print_output("Enter the number of the suspect:")
+
+        def talk_to_suspect(suspect):
+            print_output(f"You approach {suspect['name']}.")
+            print_output(f"{suspect['name']}: \"{suspect['dialogue_intro']}\"")
+            game_state["notes"].append(f"Talked to {suspect['name']}: {suspect['dialogue_intro']}")
 
 
-def on_submit(e):
-    try:
-        cmd = document.getElementById('command').value.strip()
-        document.getElementById('command').value = ''
-        if not cmd:
-            return
-        print_output(f"> {cmd}")
-        handle_input(cmd)
-    except Exception as e:
-        print_output(f"Submission error: {e}")
 
-def on_enter(e):
-    if e.key == "Enter":
-        on_submit(e)
+            def on_submit(e):
+                try:
+                    cmd = document.getElementById('command').value.strip()
+                    document.getElementById('command').value = ''
+                    if not cmd:
+                        return
+                        print_output(f"> {cmd}")
+                        handle_input(cmd)
+                    except Exception as e:
+                        print_output(f"Submission error: {e}")
+
+                        def on_enter(e):
+                            if e.key == "Enter":
+                                on_submit(e)
 
 # --- Run ---
 def start_game():
@@ -253,4 +283,4 @@ def start_game():
         print_output(f"❌ Startup error: {e}")
 
 
-start_game()
+        start_game()
