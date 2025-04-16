@@ -2,34 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Lake Como Mystery Demo</title>
+    <title>Lake Como Mystery</title>
     <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
     <script defer src="https://pyscript.net/latest/pyscript.js"></script>
     <style>
         body {
             font-family: sans-serif;
             background: #f5f5f5;
-            color: #333;
+            padding: 1rem;
             max-width: 800px;
-            margin: auto; padding: 1rem;
+            margin: auto;
         }
         #output {
             background: #222;
             color: #eee;
             padding: 1rem;
-            height: 400px;
-            overflow-y: auto;
+            min-height: 300px;
             border-radius: 8px;
-            margin-bottom: 0.5rem;
-            font-family: 'Courier New', monospace;
-        }
-        #input-area {
-            display: flex;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            font-family: monospace;
         }
         #command {
-            flex: 1;
+            width: 70%;
             padding: 0.5rem;
-            font-family: 'Courier New', monospace;
         }
         #submit {
             padding: 0.5rem 1rem;
@@ -38,13 +34,13 @@
     </style>
 </head>
 <body>
-    <h1>Lake Como Mystery Demo</h1>
+    <h1>Lake Como Murder Mystery</h1>
     <div id="output"></div>
-    <div id="input-area">
-        <input id="command" type="text" placeholder="Type your choice..." />
+    <div>
+        <input id="command" type="text" placeholder="Type a number..." />
         <button id="submit">Enter</button>
     </div>
-    
-<py-script src="game.py"></py-script>
+
+    <py-script src="game.py"></py-script>
 </body>
 </html>
