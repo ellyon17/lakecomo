@@ -128,6 +128,7 @@ def show_main_menu():
 def handle_input(cmd):
     if not game_state["initialized"]:
         init_game()
+        show_main_menu()
         return
 
     if cmd == "1":
