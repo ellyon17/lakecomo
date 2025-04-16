@@ -243,7 +243,7 @@ def handle_input(cmd):
 
 # --- New Dialogue System ---
 def show_suspect_menu():
-    print_output("\nWho would you like to talk to?")
+    print_output("\n Who would you like to talk to?")
     for idx, s in enumerate(game_state["suspects"], 1):
         print_output(f"{idx}. {s['name']}")
     print_output("Enter the number of the suspect:")
