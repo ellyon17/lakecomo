@@ -206,6 +206,7 @@ def disable_input():
     document.getElementById('command').disabled = True
 
 def on_submit(e):
+    print_output("🟢 You pressed Enter or clicked submit!")
     cmd = document.getElementById('command').value.strip()
     document.getElementById('command').value = ''
     if not cmd:
@@ -213,8 +214,21 @@ def on_submit(e):
     print_output(f"> {cmd}")
     handle_input(cmd)
 
+def on_enter(e):
+    if e.key == "Enter":
+        on_submit(e)
+
+document.getElementById('command').addEventListener('keypress', on_enter)
+
 def start_game():
-    document.getElementById('submit').addEventListener('click', on_submit)
+    print_output("✅ Game initialized")
+    btn = document.getElementById('submit')
+    if btn:
+        btn.addEventListener('click', on_submit)
+    else:
+        print_output("❌ Button not found in DOM!")
+
     init_game()
 
+# Delay execution to ensure DOM is loaded
 start_game()
