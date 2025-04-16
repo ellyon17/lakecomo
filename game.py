@@ -53,7 +53,11 @@ def print_output(text):
     out.innerHTML += text + "<br/>"
     out.scrollTop = out.scrollHeight
 
-print_output("✅ Python loaded and running!")
+try:
+    print_output("✅ game.py has loaded!")
+except Exception as e:
+    print("⚠️ Error printing to output:", e)
+
 
 def clear_output():
     document.getElementById('output').innerHTML = ""
