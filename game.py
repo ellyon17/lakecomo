@@ -200,6 +200,7 @@ def talk_to_suspect(suspect):
     print_output(f"You approach {suspect['name']}.")
     print_output(f"{suspect['name']}: \"{suspect['dialogue_intro']}\"")
     game_state["notes"].append(f"Talked to {suspect['name']}: {suspect['dialogue_intro']}")
+    game_state["menu_state"] = "main"
     show_main_menu()
 
 # --- Input Handling ---
