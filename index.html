@@ -6,26 +6,30 @@
     <link rel="stylesheet" href="https://pyscript.net/releases/2023.05.1/pyscript.css" />
     <script defer src="https://pyscript.net/releases/2023.05.1/pyscript.js"></script>
     <style>
-        body {
-            font-family: sans-serif;
-            background: #f5f5f5;
-            padding: 1rem;
-            max-width: 800px;
-            margin: auto;
-        }
-
-      #output {
+    #output {
         background-color: black;
         color: white;
         padding: 1em;
         font-family: monospace;
-        height: 400px;           /* FIXED HEIGHT */
-        overflow-y: auto;        /* ENABLE SCROLLING */
+        height: 500px;
+        max-height: 500px;
+        overflow-y: auto;
         white-space: pre-wrap;
         border: 1px solid #ccc;
         border-radius: 8px;
-        }
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
 
+    body {
+        margin: 20px;
+        background: #f5f5f5;
+    } 
+
+  input, button {
+    font-size: 1em;
+  }
 
         #command {
             width: 70%;
