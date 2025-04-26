@@ -3,6 +3,8 @@ import random
 from collections import defaultdict
 from pyodide.ffi import create_proxy
 
+from dialogue_data import DIALOGUE_TREES
+
 # --- Phase 1 Static Data ---
 
 # Ground Truth for the Murder
@@ -139,349 +141,6 @@ CLUES_DATA = [
     {"id": "clue30", "location_id": "living_room", "description": "Sheet music for pop/jazz standards scattered on piano; empty cocktail glass nearby.", "type": "Environmental", "origin": "Physical Evidence", "discovered": False}
 ]
 
-# --- Dialogue Trees ---
-
-# Structure: DIALOGUE_TREES[suspect_id][node_id] = {
-#     'text': "NPC line",
-#     'options': [
-#         {'text': "Player option 1", 'next_node': 'node_id_2'},
-#         # ... more options
-#         {'text': "Leave conversation", 'next_node': 'END'}
-#     ],
-#     'action': None # Optional: function to call when node is reached
-# }
-# --- Dialogue Trees ---
-
-DIALOGUE_TREES = {
-    # --- Raffaella Patrizi ---
-    "raffaella": {
-        "START": {
-            "text": "Detective. This is all just terrible... poor Cristiano.",
-            "options": [
-                {"text": "Can you tell me about last night?", 'next_node': 'ASK_LAST_NIGHT'},
-                {"text": "Where were you around 3 AM?", 'next_node': 'ASK_ALIBI'},
-                {"text": "Did you notice any arguments yesterday?", 'next_node': 'ASK_ARGUMENTS'},
-                {"text": "How was your relationship with Cristiano?", 'next_node': 'ASK_RELATIONSHIP'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None
-        },
-        "ASK_LAST_NIGHT": {
-            "text": "The party ended late. Naomi sang... quite loudly. Afterwards, people drifted off. I went to my room around 11:30 PM, I think. Alone.",
-            "options": [
-                {"text": "Did you see Cristiano after the singing?", 'next_node': 'SEE_CRISTIANO_LATE'},
-                {"text": "Did you notice any arguments yesterday?", 'next_node': 'ASK_ARGUMENTS'},
-                {"text": "Where were you around 3 AM?", 'next_node': 'ASK_ALIBI'},
-                {"text": "How was your relationship with Cristiano?", 'next_node': 'ASK_RELATIONSHIP'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None
-        },
-        "ASK_ALIBI": {
-            "text": "At 3 AM? Asleep in my own suite, of course! Where else would I be? This is insulting.",
-            "options": [
-                {"text": "Did anyone see you?", 'next_node': 'ALIBI_WITNESS'},
-                {"text": "Tell me about last night.", 'next_node': 'ASK_LAST_NIGHT'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None
-        },
-         "ALIBI_WITNESS": {
-            "text": "See me? No! I was alone in my room after 11:30 PM. Ask Antonello, maybe he saw me go upstairs.",
-            "options": [
-                {"text": "Tell me about arguments yesterday.", 'next_node': 'ASK_ARGUMENTS'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None
-        },
-        "ASK_ARGUMENTS": {
-            "text": "Arguments? Cristiano argued with everyone eventually. I saw him talking heatedly with Russell during dinner... something about money, I suppose. And he wasn't pleased with Gabriel and I chatting during the aperitivo.",
-            "options": [
-                {"text": "He argued with you too?", 'next_node': 'ARGUE_WITH_CRISTIANO'},
-                 {"text": "Where were you around 3 AM?", 'next_node': 'ASK_ALIBI'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None # Potentially add Raffaella witnessing clue Clue17 here
-        },
-         "ARGUE_WITH_CRISTIANO": {
-            "text": "We had a brief... disagreement after Naomi's performance. Just married couple things. Nothing serious.",
-            "options": [
-                 {"text": "Tell me about your relationship.", 'next_node': 'ASK_RELATIONSHIP'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None # This relates to Clue05 testimony
-        },
-        "ASK_RELATIONSHIP": {
-            "text": "Cristiano gave me everything. Security. A certain lifestyle. But he was... demanding. And older. We had our difficulties.",
-             "options": [
-                 {"text": "Were you close with Gabriel DuPont?", 'next_node': 'ASK_GABRIEL'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None
-        },
-        "ASK_GABRIEL": {
-            "text": "Gabriel? He's a charming boy, a friend of Cristiano's. We talked, yes. He's amusing.", # Avoids admitting affair directly
-             "options": [
-                 {"text": "Did you see him late last night?", 'next_node': 'SEE_GABRIEL_LATE'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None
-        },
-         "SEE_CRISTIANO_LATE": {
-            "text": "I saw him briefly after Naomi sang, when we argued. Then he went towards the study, I believe. That was the last time.",
-             "options": [
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None
-        },
-        "SEE_GABRIEL_LATE": {
-            "text": "He went to his room shortly after I went to mine, I think. Around 11:30 PM or midnight.",
-             "options": [
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None
-        }
-        # END node is implicit via the "Leave conversation" option
-    },
-
-    # --- Dr. Elisa Moretti ---
-    "moretti": {
-        "START": {
-            "text": "Detective. I examined the body, but the exact cause requires an autopsy. However, I have my suspicions... about Ms. Marino.",
-            "options": [
-                 {"text": "What suspicions about Dakota Marino?", 'next_node': 'SUSPICION_DAKOTA'},
-                 {"text": "What was Cristiano's health like?", 'next_node': 'ASK_HEALTH'},
-                 {"text": "Where were you around 3 AM?", 'next_node': 'ASK_ALIBI'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-            ],
-            "action": None
-        },
-        "SUSPICION_DAKOTA": {
-             "text": "Cristiano was under my care, taking medication for blood pressure. But he was also secretly taking supplements from Ms. Marino. I warned him about potential interactions. She dismissed my concerns.", # Mentions BP meds, relates to Clue01/Clue13
-             "options": [
-                 {"text": "What kind of supplements?", 'next_node': 'ASK_SUPPLEMENTS'},
-                 {"text": "What was his health like otherwise?", 'next_node': 'ASK_HEALTH'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-             ],
-             "action": None # Could potentially reveal Clue04 (argument) here
-         },
-         "ASK_HEALTH": {
-             "text": "He had high blood pressure, managed with medication. Recently, he'd shown worrying signs - dizziness, arrhythmia. I suspected external factors... like those 'supplements'.", # Relates to Clue13
-             "options": [
-                  {"text": "Did you argue with Dakota about this?", 'next_node': 'ARGUE_DAKOTA'},
-                  {"text": "Where were you around 3 AM?", 'next_node': 'ASK_ALIBI'},
-                  {"text": "Leave conversation.", 'next_node': 'END'}
-             ],
-             "action": None
-         },
-         "ASK_ALIBI": {
-             "text": "I retired to my room around 9:30 PM after Naomi started singing. I read for a while. Around 1:30 AM, I briefly went to the hallway - thought I heard something - but saw nothing and returned to my room and slept.", # Mentions being near Study hallway late
-             "options": [
-                  {"text": "Did you hear anything specific?", 'next_node': 'HEARD_SOMETHING'},
-                  {"text": "Did you see anyone?", 'next_node': 'SEE_ANYONE_LATE'},
-                  {"text": "Leave conversation.", 'next_node': 'END'}
-             ],
-             "action": None
-         },
-         "ARGUE_DAKOTA": {
-             "text": "At dinner, yes! I told her she was being reckless, peddling untested nonsense. She called my medicine poison! Cristiano just laughed...", # Confirms Clue04 testimony
-             "options": [
-                 {"text": "What supplements was she giving him?", 'next_node': 'ASK_SUPPLEMENTS'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-             ],
-             "action": None
-         },
-          "ASK_SUPPLEMENTS": {
-             "text": "I don't know exactly. Something herbal, potent... she was very secretive. Check her room or the greenhouse maybe.", # Points towards Clue02 / Clue03
-             "options": [
-                 {"text": "Tell me about your alibi.", 'next_node': 'ASK_ALIBI'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-             ],
-             "action": None
-         },
-         "HEARD_SOMETHING": {
-             "text": "Just... movement? A door closing softly down the hall perhaps. Nothing distinct. I went back to bed.",
-             "options": [
-                 {"text": "Did you see anyone?", 'next_node': 'SEE_ANYONE_LATE'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-             ],
-             "action": None
-         },
-          "SEE_ANYONE_LATE": {
-             "text": "No, the hallway was empty when I looked out around 1:30 AM.",
-             "options": [
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-             ],
-             "action": None
-         },
-    },
-
-    # --- Marco Santini ---
-     "marco": {
-        "START": {
-            "text": "Detective... I just take care of the boats. I saw things, sure, but I stayed out of the way.",
-            "options": [
-                {"text": "What did you see last night?", 'next_node': 'ASK_SAW_LAST_NIGHT'},
-                {"text": "Where were you around 3 AM?", 'next_node': 'ASK_ALIBI'},
-                {"text": "Did you interact with Gabriel DuPont?", 'next_node': 'ASK_GABRIEL_INTERACTION'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-            },
-        "ASK_SAW_LAST_NIGHT": {
-            "text": "During the party? I saw Signora Patrizi arguing with Signor DuPont near the pool bar around 5 PM. Looked intense. Later, after 11 PM, I was down by the docks, just checking things... came back up maybe midnight?", # Confirms Clue15 testimony
-            "options": [
-                {"text": "Did you see Gabriel again after the argument?", 'next_node': 'SEE_GABRIEL_AGAIN'},
-                {"text": "Where were you around 3 AM?", 'next_node': 'ASK_ALIBI'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-        },
-        "ASK_ALIBI": {
-            "text": "Me? At 3 AM? I was in my staff quarters, asleep. Long day yesterday.",
-            "options": [
-                {"text": "Can anyone confirm that?", 'next_node': 'ALIBI_WITNESS'},
-                {"text": "What did you see last night?", 'next_node': 'ASK_SAW_LAST_NIGHT'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-        },
-         "ALIBI_WITNESS": {
-            "text": "I don't know... maybe Antonello saw me come in? I went straight to my room after checking the docks.",
-            "options": [
-                {"text": "Did you interact with Gabriel DuPont?", 'next_node': 'ASK_GABRIEL_INTERACTION'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-        },
-         "ASK_GABRIEL_INTERACTION": {
-            "text": "Signor DuPont? We... spoke. Briefly. Near the pool bar. Just work talk.", # Reluctant, defensive
-             "options": [
-                {"text": "It looked like an argument.", 'next_node': 'PRESS_ARGUMENT'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-         },
-         "PRESS_ARGUMENT": {
-            "text": "No! It was nothing. He... he can be intense. Look, I don't want any trouble.", # Evasive
-             "options": [
-                {"text": "Did you see him later?", 'next_node': 'SEE_GABRIEL_AGAIN'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-         },
-         "SEE_GABRIEL_AGAIN": {
-            "text": "He... he came down to the docks after me. We talked again. On the yacht. Briefly.", # Hints at the yacht encounter related to Clue16
-             "options": [
-                 {"text": "What did you talk about?", 'next_node': 'YACHT_TALK'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-         },
-         "YACHT_TALK": {
-             "text": "Just... clearing the air. It's complicated. Please, Detective.", # Still hiding the nature of relationship
-              "options": [
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-         }
-    },
-
-    # --- Antonello Pisani ---
-    "antonello": {
-        "START": {
-            "text": "Good morning, Detective. A terrible shock. I found him, you know. In the study, around 4 AM. Door was unlocked, which was unusual.",
-            "options": [
-                {"text": "Tell me about finding the body.", 'next_node': 'FINDING_BODY'},
-                {"text": "What did you observe last night?", 'next_node': 'ASK_OBSERVATIONS'},
-                {"text": "Where were you between midnight and 4 AM?", 'next_node': 'ASK_ALIBI'},
-                {"text": "Did Mr. Patrizi seem worried about anything?", 'next_node': 'ASK_VICTIM_MOOD'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-             },
-        "FINDING_BODY": {
-            "text": "I do my rounds starting at 4 AM. The study light was on, door unlocked. Signor Patrizi was... slumped in his chair. The glass was overturned.", # Relates to Clue25
-            "options": [
-                {"text": "Did you touch anything?", 'next_node': 'TOUCH_SCENE'},
-                {"text": "What did you observe last night?", 'next_node': 'ASK_OBSERVATIONS'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-             },
-         "TOUCH_SCENE": {
-            "text": "No, Detective. I checked for breathing, then immediately called Signora Patrizi and Dr. Moretti.",
-            "options": [
-                {"text": "Tell me what you saw last night.", 'next_node': 'ASK_OBSERVATIONS'},
-                {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-             },
-         "ASK_OBSERVATIONS": {
-             "text": "The evening was... tense. I overheard Signor Patrizi refuse Mr. Williams money near the pool bar. Later, I saw Ms. Marino take a drink towards the study around 1 AM. And young Marco seemed agitated when he returned from the docks around midnight.", # Confirms Clue07, Dakota activity, Marco's mood
-             "options": [
-                 {"text": "Did you see Dr. Moretti late?", 'next_node': 'SEE_MORETTI_LATE'},
-                 {"text": "Did Mr. Patrizi seem worried?", 'next_node': 'ASK_VICTIM_MOOD'},
-                 {"text": "Where were you between midnight and 4 AM?", 'next_node': 'ASK_ALIBI'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-         },
-         "ASK_ALIBI": {
-             "text": "Between midnight and 4 AM? Performing my duties. Clearing the dining room, checking the locks, ensuring the house was secure. I retired to my quarters around 2:30 AM, before starting rounds at 4 AM.",
-             "options": [
-                 {"text": "Did you see anyone else during that time?", 'next_node': 'SEE_ANYONE_MIDNIGHT_4AM'},
-                 {"text": "What did you observe earlier?", 'next_node': 'ASK_OBSERVATIONS'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-         },
-         "SEE_ANYONE_MIDNIGHT_4AM": {
-             "text": "Only Ms. Marino heading towards the study around 1 AM, as I said. And Dr. Moretti briefly in the upstairs hall near the study around 1:30 AM, though she went back to her room.",
-             "options": [
-                 {"text": "Did Mr. Patrizi seem worried?", 'next_node': 'ASK_VICTIM_MOOD'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-         },
-          "ASK_VICTIM_MOOD": {
-             "text": "Signor Patrizi? He seemed... preoccupied. Annoyed after the argument with the Signora. He asked for his expensive whisky before going to the study.", # Relates to Clue10 / old Clue07
-             "options": [
-                 {"text": "Did he mention anything about his son's business?", 'next_node': 'ASK_SON_BUSINESS'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-                ]
-         },
-         "SEE_MORETTI_LATE": { # Added pathway from ASK_OBSERVATIONS
-             "text": "Yes, around 1:30 AM. She looked into the hallway near the study, seemed hesitant, then returned to her room.",
-             "options": [
-                 {"text": "Where were you between midnight and 4 AM?", 'next_node': 'ASK_ALIBI'},
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-             ]
-         },
-         "ASK_SON_BUSINESS": { # Added pathway from ASK_VICTIM_MOOD
-             "text": "My son? Signor Patrizi... he refused to help. After all my years of service... he wouldn't even consider it.", # Confirms motive related to Clue14
-             "options": [
-                 {"text": "Leave conversation.", 'next_node': 'END'}
-             ]
-         }
-    },
-
-    # --- Placeholders for other suspects ---
-    # You'll need to fill these in using the same pattern, drawing from the Script timeline
-     "dakota": {
-        "START": {"text": "Such negative energy here, Detective. Clearly, Cristiano's system was overburdened by toxins. My methods could have saved him.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
-        # Add nodes: ASK_ALIBI, ASK_SUPPLEMENTS (Danshen), ARGUE_MORETTI, SEE_CRISTIANO_LATE?
-    },
-    "russell": {
-        "START": {"text": "Shocking, utterly shocking. Cristiano was a dear friend. A complex man, certainly, but a friend.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
-        # Add nodes: ASK_ALIBI (Exonerating Clue21), ASK_FINANCES (Clue12), ARGUE_CRISTIANO (Clue07)
-    },
-     "rose": {
-        "START": {"text": "It's dreadful. Russell is devastated. Cristiano could be difficult, but... this is too much.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
-        # Add nodes: ASK_ALIBI (Exonerating Clue21), ASK_RUSSELL_MOOD, OPINION_CRISTIANO
-    },
-     "gabriel": {
-        "START": {"text": "Merde. Cristiano... he lived fast. But like this? Non. I was on a call most of the night.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
-        # Add nodes: ASK_ALIBI (Exonerating Clue23), ASK_RAFFAELLA, ASK_MARCO_INTERACTION (Clue15/Clue16)
-    },
-     "sundeep": {
-        "START": {"text": "Tragic. Really tragic. Bad for business, bad for everyone. I barely knew him, really.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
-        # Add nodes: ASK_ALIBI (Exonerating Clue22), ASK_INTERACTION_CRISTIANO (Clue08), ASK_NAOMI
-    },
-     "naomi": {
-        "START": {"text": "OMG, it's like, totally horrible? I sang for him last night, he seemed fine... maybe a little stressed?", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
-        # Add nodes: ASK_ALIBI (part of Clue22), SINGING_PERFORMANCE, ASK_CRISTIANO_INTEREST (Red Herring Clue18 link?)
-    }
-}
-
-# --- End of Dialogue Trees ---
-# --- End of Dialogue Trees ---
 
 # --- End of Phase 1 Static Data ---
 
@@ -665,8 +324,15 @@ def display_dialogue_node():
     # Try to get the dialogue node data
     try:
         node_data = DIALOGUE_TREES[suspect_id][node_id]
+
+        # --- Add this block to process actions ---
+        action_to_process = node_data.get('action') # Get action string if it exists
+        if action_to_process:
+            process_dialogue_action(action_to_process)
+        # --- End of action processing block ---
+
         npc_text = node_data['text']
-        options = node_data.get('options', []) # Use .get for safety
+        options = node_data.get('options', [])
 
         # Display NPC text
         print_output(f"\n{suspect_name}: \"{npc_text}\"")
@@ -695,6 +361,55 @@ def end_dialogue():
     game_state["current_dialogue_node_id"] = None
     game_state["menu_state"] = "main"
     show_main_menu()
+
+# --- Action Processing ---
+
+def process_dialogue_action(action_string):
+    """Parses and executes actions defined in dialogue nodes."""
+    if not action_string:
+        return # No action defined
+
+    print(f"[DEBUG] Processing action: {action_string}") # Optional debug print
+
+    if action_string.startswith("discover_clue"):
+        try:
+            clue_id_to_discover = action_string.split("discover_")[1] # Get the part after "discover_"
+
+            # Check if clue exists in master list (optional safety check)
+            clue_exists = any(clue['id'] == clue_id_to_discover for clue in CLUES_DATA)
+            if not clue_exists:
+                print(f"[DEBUG] Action Error: Clue ID '{clue_id_to_discover}' not found in CLUES_DATA.")
+                return
+
+            # Check if clue is already discovered
+            if clue_id_to_discover not in game_state["notebook_discovered_clue_ids"]:
+                game_state["notebook_discovered_clue_ids"].append(clue_id_to_discover)
+                print_output("   [Notebook Updated]") # Give player feedback
+                # Find the clue description for potential future use/logging
+                # discovered_clue_info = next((clue for clue in CLUES_DATA if clue['id'] == clue_id_to_discover), None)
+                # if discovered_clue_info:
+                #    print(f"[DEBUG] Discovered: {discovered_clue_info['description']}")
+
+            # else:
+                # print(f"[DEBUG] Clue '{clue_id_to_discover}' was already discovered.")
+
+        except IndexError:
+            print(f"[DEBUG] Action Error: Invalid format for discover_clue action: {action_string}")
+        except Exception as e:
+             print(f"[DEBUG] Error processing action '{action_string}': {e}")
+
+    # --- Add more action types later? ---
+    # elif action_string == "update_alibi":
+    #     suspect_id = game_state["in_dialogue_with"]
+    #     node_id = game_state["current_dialogue_node_id"]
+    #     npc_text = DIALOGUE_TREES[suspect_id][node_id]['text']
+    #     game_state['notebook_suspect_info'][suspect_id]['alibi_statement'] = npc_text
+    #     print_output("   [Notebook Updated - Alibi Noted]")
+    # elif action_string.startswith("add_timeline_entry"):
+    #     entry_text = action_string.split("add_timeline_entry:")[1].strip()
+    #     game_state['notebook_timeline_entries'].append(entry_text)
+    #     print_output("   [Notebook Updated - Timeline]")
+    # --- End of future action ideas ---
 
 def talk_to_suspect(suspect):
     # suspect is a dictionary like {"id": "raffaella", "name": "Raffaella Patrizi", ...}
