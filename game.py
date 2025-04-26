@@ -244,20 +244,6 @@ def show_room_menu():
         print_output(f"{idx}. {room['name']} ({room['area']})")
     print_output("Enter the number of the room to visit:")
 
-def view_notes():
-    print_output("\n--- Your Detective Notes ---")
-    if not game_state["player_notes"]:
-        print_output("You haven't recorded any notes yet.")
-    else:
-        # Just print each note string as recorded
-        for idx, note in enumerate(game_state["player_notes"]):
-            print_output(f"{idx + 1}. {note}")
-    print_output("--------------------------")
-
-    # Stay in 'main' menu state after viewing notes
-    game_state["menu_state"] = "main"
-    show_main_menu()
-
 def visit_room(room):
     # room is a dictionary like {"id": "study", "name": "Cristiano's Study", ...}
     room_id = room['id']
@@ -285,9 +271,11 @@ def visit_room(room):
                 clue['discovered'] = True # Mark clue as discovered IN THE GAME STATE
                 clues_found_in_room.append(clue)
 
-                # Add formatted clue to player notes
-                note_text = f"Clue ({clue['origin']}) in {room_name}: {clue['description']}"
-                game_state["player_notes"].append(note_text)
+                # --- Add clue ID to notebook ---
+                if clue['id'] not in game_state["notebook_discovered_clue_ids"]:
+                    game_state["notebook_discovered_clue_ids"].append(clue['id'])
+                    # We could print [Notebook Updated] here too, but maybe too noisy?
+                # --- End notebook update ---
 
         if not clues_found_in_room:
             print_output("You don't find any obvious clues right now.")
@@ -464,7 +452,7 @@ def handle_input(cmd):
             show_room_menu()
         elif cmd == "2":
             # No state change needed for view_notes, it returns to main menu itself
-            view_notes()
+            open_notebook()
         elif cmd == "3":
             game_state["menu_state"] = "accuse"
             make_accusation()
