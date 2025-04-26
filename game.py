@@ -77,19 +77,25 @@ LOCATIONS = [
 ]
 
 # Suspects (Based on Script Bios - simplified for now, will add more detail later)
+# Example for Raffaella (add similarly to all others):
+# {"id": "raffaella", "name": "Raffaella Patrizi", "bio": "...", 'dialogue_start_node': 'START'},
+# ... do this for all suspects in the SUSPECTS_DATA list ...
+
+# --- Updated SUSPECTS_DATA Example (showing first few with the new key) ---
 SUSPECTS_DATA = [
-    {"id": "raffaella", "name": "Raffaella Patrizi", "bio": "Cristiano's elegant, younger wife, active in high society."},
-    {"id": "moretti", "name": "Dr. Elisa Moretti", "bio": "The sharp, young family physician."},
-    {"id": "marco", "name": "Marco Santini", "bio": "The handsome young boatman, new to the staff."},
-    {"id": "giovanna", "name": "Giovanna Russo", "bio": "The celebrated Tuscan chef, proud and fiery."},
-    {"id": "antonello", "name": "Antonello Pisani", "bio": "The meticulous, long-serving butler."},
-    {"id": "dakota", "name": "Dakota Marino", "bio": "The American wellness influencer."},
-    {"id": "russell", "name": "Russell Williams", "bio": "The powerful British media mogul."},
-    {"id": "rose", "name": "Rose Williams", "bio": "Russell's elegant wife, involved in charity."},
-    {"id": "gabriel", "name": "Gabriel DuPont", "bio": "The charming French F1 pilot."},
-    {"id": "sundeep", "name": "Sundeep Arora", "bio": "The ambitious Silicon Valley tech CEO."},
-    {"id": "naomi", "name": "Naomi Lee", "bio": "Sundeep's model girlfriend."}
+    {"id": "raffaella", "name": "Raffaella Patrizi", "bio": "Cristiano's elegant, younger wife, active in high society.", 'dialogue_start_node': 'START'},
+    {"id": "moretti", "name": "Dr. Elisa Moretti", "bio": "The sharp, young family physician.", 'dialogue_start_node': 'START'},
+    {"id": "marco", "name": "Marco Santini", "bio": "The handsome young boatman, new to the staff.", 'dialogue_start_node': 'START'},
+    {"id": "giovanna", "name": "Giovanna Russo", "bio": "The celebrated Tuscan chef, proud and fiery.", 'dialogue_start_node': 'START'},
+    {"id": "antonello", "name": "Antonello Pisani", "bio": "The meticulous, long-serving butler.", 'dialogue_start_node': 'START'},
+    {"id": "dakota", "name": "Dakota Marino", "bio": "The American wellness influencer.", 'dialogue_start_node': 'START'},
+    {"id": "russell", "name": "Russell Williams", "bio": "The powerful British media mogul.", 'dialogue_start_node': 'START'},
+    {"id": "rose", "name": "Rose Williams", "bio": "Russell's elegant wife, involved in charity.", 'dialogue_start_node': 'START'},
+    {"id": "gabriel", "name": "Gabriel DuPont", "bio": "The charming French F1 pilot.", 'dialogue_start_node': 'START'},
+    {"id": "sundeep", "name": "Sundeep Arora", "bio": "The ambitious Silicon Valley tech CEO.", 'dialogue_start_node': 'START'},
+    {"id": "naomi", "name": "Naomi Lee", "bio": "Sundeep's model girlfriend.", 'dialogue_start_node': 'START'}
 ]
+# --- End of Updated SUSPECTS_DATA ---
 
 # Clues (Based on Script - using 'location_id' matching LOCATIONS above)
 CLUES_DATA = [
@@ -133,6 +139,95 @@ CLUES_DATA = [
     {"id": "clue30", "location_id": "living_room", "description": "Sheet music for pop/jazz standards scattered on piano; empty cocktail glass nearby.", "type": "Environmental", "origin": "Physical Evidence", "discovered": False}
 ]
 
+# --- Dialogue Trees ---
+
+# Structure: DIALOGUE_TREES[suspect_id][node_id] = {
+#     'text': "NPC line",
+#     'options': [
+#         {'text': "Player option 1", 'next_node': 'node_id_2'},
+#         # ... more options
+#         {'text': "Leave conversation", 'next_node': 'END'}
+#     ],
+#     'action': None # Optional: function to call when node is reached
+# }
+
+DIALOGUE_TREES = {
+    "raffaella": {
+        "START": {
+            "text": "Detective. This is all just terrible... poor Cristiano.",
+            "options": [
+                {"text": "Ask about last night.", 'next_node': 'ASK_LAST_NIGHT'},
+                {"text": "Leave conversation.", 'next_node': 'END'}
+            ],
+            "action": None
+        },
+        "ASK_LAST_NIGHT": {
+            "text": "Last night? The party... well, it had its moments. Tensions, you know. Then Naomi sang...",
+            "options": [
+                {"text": "What kind of tensions?", 'next_node': 'ASK_TENSIONS'},
+                {"text": "Leave conversation.", 'next_node': 'END'}
+            ],
+            "action": None
+        },
+        "ASK_TENSIONS": {
+            "text": "Oh, the usual family drama, business disagreements... And Cristiano could be... difficult. Especially with Gabriel around.",
+             "options": [
+                {"text": "Leave conversation.", 'next_node': 'END'}
+            ],
+            "action": None
+        }
+        # More nodes for Raffaella will go here...
+    },
+    "moretti": {
+        "START": {
+            "text": "Detective. I examined the body, but the exact cause of death requires an autopsy. However, I have my suspicions...",
+            "options": [
+                 {"text": "What suspicions?", 'next_node': 'ASK_SUSPICIONS'},
+                 {"text": "Leave conversation.", 'next_node': 'END'}
+            ],
+            "action": None
+        },
+         "ASK_SUSPICIONS": {
+            "text": "Cristiano was under my care, but he was also... influenced by Ms. Marino's questionable 'wellness' practices. I warned him.",
+             "options": [
+                {"text": "Leave conversation.", 'next_node': 'END'}
+            ],
+            "action": None
+        }
+        # More nodes for Dr. Moretti...
+    },
+    # Add START nodes (at least) for all other suspects based on their intros from the Script/Timeline
+    "marco": {
+        "START": {"text": "Detective... I just take care of the boats. I saw things, sure, but I stayed out of the way.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
+    },
+     "giovanna": {
+        "START": {"text": "Bah! A tragedy. But his taste? Questionable! Especially that Dakota woman's food...", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
+    },
+      "antonello": {
+        "START": {"text": "Good morning, Detective. A terrible shock. I found him, you know. In the study, around 4 AM.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
+    },
+     "dakota": {
+        "START": {"text": "Such negative energy here, Detective. Clearly, Cristiano's system was overburdened by toxins. My methods could have saved him.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
+    },
+    "russell": {
+        "START": {"text": "Shocking, utterly shocking. Cristiano was a dear friend. A complex man, certainly, but a friend.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
+    },
+     "rose": {
+        "START": {"text": "It's dreadful. Russell is devastated. Cristiano could be difficult, but... this is too much.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
+    },
+     "gabriel": {
+        "START": {"text": "Merde. Cristiano... he lived fast. But like this? Non. I was on a call most of the night.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
+    },
+     "sundeep": {
+        "START": {"text": "Tragic. Really tragic. Bad for business, bad for everyone. I barely knew him, really.", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
+    },
+     "naomi": {
+        "START": {"text": "OMG, it's like, totally horrible? I sang for him last night, he seemed fine... maybe a little stressed?", "options": [{"text": "Leave conversation.", 'next_node': 'END'}], "action": None}
+    }
+}
+
+# --- End of Dialogue Trees ---
+
 # --- End of Phase 1 Static Data ---
 
 # --- Game State ---
@@ -149,7 +244,12 @@ game_state = {
     "in_accusation": False,
     "interactions": defaultdict(list),
     "initialized": False,
-    "menu_state": "main"
+    "menu_state": "main", # This will change during dialogue
+    "player_notes": [], # Renamed from "notes"
+    "visited_rooms": [], # Renamed from "visited"
+    # --- Add these new keys for dialogue ---
+    "in_dialogue_with": None, # Stores the 'id' of the suspect being talked to
+    "current_dialogue_node_id": None, # Stores the 'id' of the current node in the tree
 }
 
 # --- Utility Functions ---
@@ -246,7 +346,7 @@ def visit_room(room):
                 clues_found_in_room.append(clue)
 
                 # Add formatted clue to player notes
-                note_text = f"Clue ({clue['type']}/{clue['origin']}) in {room_name}: {clue['description']}"
+                note_text = f"Clue ({clue['origin']}) in {room_name}: {clue['description']}"
                 game_state["player_notes"].append(note_text)
 
         if not clues_found_in_room:
@@ -296,24 +396,82 @@ def show_suspect_menu():
         print_output(f"{idx}. {s['name']}")
     print_output("Enter the number of the suspect:")
 
-def talk_to_suspect(suspect):
-    print_output(f"You approach {suspect['name']}.")
-    print_output(f"{suspect['name']}: \"{suspect['dialogue_intro']}\"")
-    game_state["notes"].append(f"Talked to {suspect['name']}: {suspect['dialogue_intro']}")
+def display_dialogue_node():
+    suspect_id = game_state["in_dialogue_with"]
+    node_id = game_state["current_dialogue_node_id"]
+    suspect_name = ""
+
+    # Find the suspect's name (optional but good for display)
+    for s in game_state["suspects"]:
+        if s['id'] == suspect_id:
+            suspect_name = s['name']
+            break
+
+    # Try to get the dialogue node data
+    try:
+        node_data = DIALOGUE_TREES[suspect_id][node_id]
+        npc_text = node_data['text']
+        options = node_data.get('options', []) # Use .get for safety
+
+        # Display NPC text
+        print_output(f"\n{suspect_name}: \"{npc_text}\"")
+
+        # Display Player Options
+        if options:
+            print_output("\nYour response:")
+            for idx, option in enumerate(options):
+                print_output(f"{idx + 1}. {option['text']}")
+            print_output("Enter the number of your choice:")
+        else:
+            # If no options, maybe automatically end? Or needs an explicit END node.
+            # For now, assume an END node should always have options leading out.
+            print_output("The conversation seems to be over.")
+            # End dialogue automatically if no options? Risky, let's rely on END node.
+            # end_dialogue() # We might need an end_dialogue helper function later
+
+    except KeyError:
+        print_output(f"\n[Error: Dialogue node '{node_id}' not found for {suspect_name}. Ending conversation.]")
+        end_dialogue() # End dialogue if node is broken
+
+def end_dialogue():
+    """Resets dialogue state and returns to main menu."""
+    print_output("--- Leaving Conversation ---")
+    game_state["in_dialogue_with"] = None
+    game_state["current_dialogue_node_id"] = None
     game_state["menu_state"] = "main"
     show_main_menu()
+
+def talk_to_suspect(suspect):
+    # suspect is a dictionary like {"id": "raffaella", "name": "Raffaella Patrizi", ...}
+    suspect_id = suspect['id']
+    suspect_name = suspect['name']
+
+    print_output(f"\n--- Approaching {suspect_name} ---")
+
+    # Set dialogue state
+    game_state["in_dialogue_with"] = suspect_id
+    game_state["current_dialogue_node_id"] = suspect.get('dialogue_start_node', 'START') # Get start node from suspect data
+    game_state["menu_state"] = "dialogue" # Change game state to dialogue mode
+
+    # Display the first node
+    display_dialogue_node()
 
 # --- Input Handling ---
 def handle_input(cmd):
     if not game_state["initialized"]:
-        init_game()
+        # init_game() # Should already be initialized by start_game()
+        print_output("Error: Game not initialized.")
         return
 
-    if game_state["menu_state"] == "main":
+    current_state = game_state["menu_state"]
+
+    if current_state == "main":
+        # ... (keep existing logic for main menu: 1, 2, 3, 4)
         if cmd == "1":
             game_state["menu_state"] = "room"
             show_room_menu()
         elif cmd == "2":
+            # No state change needed for view_notes, it returns to main menu itself
             view_notes()
         elif cmd == "3":
             game_state["menu_state"] = "accuse"
@@ -325,33 +483,87 @@ def handle_input(cmd):
             print_output("Invalid input. Please enter a valid number.")
             show_main_menu()
 
-    elif game_state["menu_state"] == "room":
+    elif current_state == "room":
+        # ... (keep existing logic for room selection)
         if cmd.isdigit():
             idx = int(cmd) - 1
             if 0 <= idx < len(game_state["rooms"]):
-                game_state["menu_state"] = "main"
-                visit_room(game_state["rooms"][idx])
+                visit_room(game_state["rooms"][idx]) # visit_room now handles returning to main menu
             else:
                 print_output("Invalid room selection.")
-                show_room_menu()
+                show_room_menu() # Show menu again
         else:
             print_output("Invalid room input. Please enter a number.")
-            show_room_menu()
+            show_room_menu() # Show menu again
 
-    elif game_state["menu_state"] == "accuse":
-        process_accusation(cmd)
 
-    elif game_state["menu_state"] == "talk":
-        if cmd.isdigit():
+    elif current_state == "accuse":
+        # ... (keep existing logic for accusation)
+        process_accusation(cmd) # process_accusation handles game end or returning to menu
+
+    elif current_state == "talk":
+        # ... (keep existing logic for suspect selection)
+         if cmd.isdigit():
             idx = int(cmd) - 1
             if 0 <= idx < len(game_state["suspects"]):
-                talk_to_suspect(game_state["suspects"][idx])
+                talk_to_suspect(game_state["suspects"][idx]) # talk_to_suspect now changes state to 'dialogue'
             else:
                 print_output("Invalid suspect.")
-                show_suspect_menu()
-        else:
+                show_suspect_menu() # Show menu again
+         else:
             print_output("Please enter the number of the suspect.")
-            show_suspect_menu()
+            show_suspect_menu() # Show menu again
+
+    # --- Add this new block to handle dialogue input ---
+    elif current_state == "dialogue":
+        suspect_id = game_state["in_dialogue_with"]
+        node_id = game_state["current_dialogue_node_id"]
+
+        if suspect_id is None or node_id is None:
+            print_output("[Error: Unexpectedly not in dialogue. Returning to main menu.]")
+            end_dialogue()
+            return
+
+        try:
+            node_data = DIALOGUE_TREES[suspect_id][node_id]
+            options = node_data.get('options', [])
+
+            if cmd.isdigit():
+                choice_idx = int(cmd) - 1
+                if 0 <= choice_idx < len(options):
+                    chosen_option = options[choice_idx]
+                    next_node_id = chosen_option['next_node']
+
+                    if next_node_id == 'END':
+                        end_dialogue()
+                    else:
+                        # Move to the next node
+                        game_state["current_dialogue_node_id"] = next_node_id
+                        # Optional: Execute action if defined for the new node
+                        # new_node_data = DIALOGUE_TREES[suspect_id].get(next_node_id, {})
+                        # action = new_node_data.get('action')
+                        # if action:
+                        #     action() # Call the action function
+                        display_dialogue_node() # Display the new node
+                else:
+                    print_output("Invalid option number. Please try again.")
+                    # Re-display the current node's options
+                    display_dialogue_node()
+            else:
+                print_output("Please enter the number corresponding to your choice.")
+                # Re-display the current node's options
+                display_dialogue_node()
+
+        except KeyError:
+            print_output(f"[Error: Dialogue node '{node_id}' configuration issue for {suspect_id}. Ending conversation.]")
+            end_dialogue()
+    # --- End of new dialogue block ---
+
+    else:
+        print_output(f"Error: Unknown menu state '{current_state}'")
+        # Reset to main menu as a fallback
+        game_state["menu_state"] = "main"
+        show_main_menu()
 
 # --- Input Bindings ---
 def on_submit(e):
