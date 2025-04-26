@@ -366,6 +366,7 @@ def end_dialogue():
 
 def process_dialogue_action(action_string):
     """Parses and executes actions defined in dialogue nodes."""
+    global game_state
     if not action_string:
         return # No action defined
 
