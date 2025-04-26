@@ -146,25 +146,36 @@ CLUES_DATA = [
 
 # --- Game State ---
 game_state = {
-    "murderer": None,
-    "cause": None,
-    "motive": None,
-    "suspects": [],
+    # Core game data holders (populated by init_game)
+    "ground_truth": {},
     "rooms": [],
-    "clues": {},
-    "notes": [],
-    "visited": [],
-    "accused": False,
-    "in_accusation": False,
-    "interactions": defaultdict(list),
+    "suspects": [],
+    "clues": [], # Holds ALL clues (static data), discovered status changes here
+
+    # --- Notebook Data ---
+    "notebook_discovered_clue_ids": [], # List of IDs of clues player has found
+    "notebook_suspect_info": {}, # Dict: {suspect_id: {"bio": "...", "alibi_statement": None, "notes": []}, ...}
+    "notebook_timeline_entries": [], # List of strings representing timeline events discovered
+    # --- End of Notebook Data ---
+
+    # Player state / Location tracking
+    "current_location_id": None,
+    "visited_rooms": [], # Tracks first visits for clue discovery
+
+    # State management
     "initialized": False,
-    "menu_state": "main", # This will change during dialogue
-    "player_notes": [], # Renamed from "notes"
-    "visited_rooms": [], # Renamed from "visited"
-    # --- Add these new keys for dialogue ---
-    "in_dialogue_with": None, # Stores the 'id' of the suspect being talked to
-    "current_dialogue_node_id": None, # Stores the 'id' of the current node in the tree
+    "menu_state": "main", # Current game menu/mode
+    "in_dialogue_with": None, # ID of suspect in dialogue
+    "current_dialogue_node_id": None, # Current node in dialogue tree
+
+    # Accusation state
+    "accused": False,
+    "in_accusation": False, # (This key was in the original, kept for potential use)
+
+    # Basic Time Tracking (Placeholder)
+    "current_game_time": None,
 }
+# --- End Game State Definition ---
 
 # --- Utility Functions ---
 def print_output(text):
