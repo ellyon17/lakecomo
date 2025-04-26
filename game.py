@@ -188,7 +188,6 @@ def print_output(text):
 
 
 # --- Game Initialization ---
-# --- Game Initialization ---
 def init_game():
     # Load static data into game_state
     # Create deep copies to avoid modifying the original data during gameplay
@@ -197,18 +196,34 @@ def init_game():
     game_state["suspects"] = [dict(sus) for sus in SUSPECTS_DATA] # Using new SUSPECTS_DATA
     game_state["clues"] = [dict(clue) for clue in CLUES_DATA] # Using new CLUES_DATA
 
-    # Initialize player state
-    game_state["player_notes"] = [] # Changed from "notes" for clarity
-    game_state["visited_rooms"] = [] # Changed from "visited"
+    # --- Initialize Notebook ---
+    game_state["notebook_discovered_clue_ids"] = []
+    game_state["notebook_timeline_entries"] = []
+    game_state["notebook_suspect_info"] = {}
+    # Populate initial suspect info for the notebook
+    for sus_data in SUSPECTS_DATA:
+        sus_id = sus_data['id']
+        game_state["notebook_suspect_info"][sus_id] = {
+            "name": sus_data['name'],
+            "bio": sus_data['bio'],
+            "alibi_statement": None, # Player needs to learn this
+            "notes": [] # Player might add notes later, or we log key info here
+        }
+    # --- End Notebook Init ---
+
+    # Initialize OTHER player state
+    # game_state["player_notes"] = [] # MAKE SURE THIS OLD LINE IS REMOVED OR COMMENTED
+    game_state["visited_rooms"] = [] # This is correct
     game_state["accused"] = False
     game_state["current_location_id"] = None # Player starts nowhere initially
-    game_state["menu_state"] = "main" # Or maybe "intro" first?
+    game_state["menu_state"] = "main"
     game_state["initialized"] = True
 
     # Show the intro text
     show_intro()
     # Show the main menu to start
     show_main_menu()
+# --- End Game Initialization ---
 
 # --- Menu Displays ---
 def show_intro():
