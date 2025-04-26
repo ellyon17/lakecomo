@@ -49,6 +49,10 @@
         <button id="submit">Enter</button>
     </div>
 
-    <py-script src="game.py?v=3.3"></py-script>
+    <py-config>
+        [[fetch]]
+        files = ["./dialogue_data.py", "./game.py"]
+    </py-config>
+    <py-script src="game.py"></py-script>
 </body>
 </html>
