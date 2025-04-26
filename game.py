@@ -339,7 +339,7 @@ def display_dialogue_node():
         # --- Add this block to process actions ---
         action_to_process = node_data.get('action') # Get action string if it exists
         if action_to_process:
-        process_dialogue_action(action_to_process, game_state) # Pass game_state here
+            process_dialogue_action(action_to_process, game_state) # Pass game_state here
         # --- End of action processing block ---
 
         npc_text = node_data['text']
