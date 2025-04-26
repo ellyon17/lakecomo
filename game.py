@@ -27,7 +27,19 @@ Just hours earlier, the villa was the scene of the final night of a lavish, week
 Now, the laughter has died, replaced by suspicion and fear. The serene beauty of Lake Como hides a dark secret. Everyone who remained at the villa – both the esteemed guests and the dedicated staff – is now confined to the grounds. They are all suspects, and no one leaves until you uncover the truth.
 
 Meet the Suspects:
-*(Character introductions will be listed here based on the 'Script' document)*
+* Cristiano Patrizi (Victim): Self‑made industrialist celebrating his 50th birthday at the villa.
+* Raffaella Patrizi (Cristiano's wife): Cristiano's elegant, younger wife, active in high society, passionate of the arts but perhaps feeling trapped.
+* Dr. Elisa Moretti (Personal Physician): Young and prominent Doctor from Milan, Dr. Moretti is also Patrizi's family doctor, and Cristiano’s longtime doctor, entrusted with his health. 
+* Marco Santini (Boater): Young and handsome, Marco is a new addition to the staff and is in charge of the boating needs of the Patrizi's family. Takes care of their yacht and always hangs around the docks.
+* Giovanna Russo (Chef): A celebrated Tuscan cook, famous for her extravagant way of presenting her food in the national food network. Was hired by Cristiano Patrizi to craft a lavish menu for tonight’s party.
+* Antonello Pisani (Butler): Has been taking care of the Villa for decades, is very precise and knows the villa and the family like the palm of his hand
+* Dakota Marino (American Wellness Influencer): A rich and famous wellness influencer that prescribes very out of the ordinary methods, is against traditional medicine and has an extreme diet and very specific early morning habits.
+* Russell Williams (British media mogul and Cristian's friend): Famous businessman from London, controls one of the biggest media empires in the world, although rumors are that traditional media is not as profitable as it once was.
+* Rose Williams (Russell's wife): Wife of Russell, manages the Williams foundation and is very active in charity work. She is classically posh and clearly comes from a British noble family. 
+* Gabriel DuPont (French F1 pilot): Close friends with Cristiano, they spend a long weekend every year in Montecarlo, partying together after the F1 race.
+* Sundeep Arora (CEO and tech bro): Rich engineer from Silicon Valley, with a humble background but reached success after launching a social media app to make short disappearing videos, very popular with the young audience.
+* Naomi Lee (model, Sundeep's girlfriend): American model, she’s Sundeep +1 and seems to have met everyone else here for the first time. It’s her first time in Italy and is very excited about the scenery. 
+
 
 Your Investigation:
 
@@ -193,23 +205,58 @@ def show_room_menu():
     print_output("Enter the number of the room to visit:")
 
 def view_notes():
-    print_output("\nYour Notes:")
-    if not game_state["notes"]:
-        print_output("You have no notes yet.")
+    print_output("\n--- Your Detective Notes ---")
+    if not game_state["player_notes"]:
+        print_output("You haven't recorded any notes yet.")
     else:
-        for note in game_state["notes"]:
-            print_output(f"- {note}")
+        # Just print each note string as recorded
+        for idx, note in enumerate(game_state["player_notes"]):
+            print_output(f"{idx + 1}. {note}")
+    print_output("--------------------------")
+
+    # Stay in 'main' menu state after viewing notes
+    game_state["menu_state"] = "main"
     show_main_menu()
 
 def visit_room(room):
-    if room["name"] in game_state["visited"]:
-        print_output(f"You return to the {room['name']}.")
-    else:
-        print_output(f"You enter the {room['name']} for the first time.")
-        game_state["visited"].append(room["name"])
-        clue = game_state["clues"][room["name"]]
-        print_output(clue)
-        game_state["notes"].append(f"Clue from {room['name']}: {clue}")
+    # room is a dictionary like {"id": "study", "name": "Cristiano's Study", ...}
+    room_id = room['id']
+    room_name = room['name']
+    game_state["current_location_id"] = room_id # Track current location
+
+    print_output(f"\n--- Entering {room_name} ---")
+    print_output(room.get('description', 'It looks like a room.')) # Show room description
+
+    # Check if room has been visited before for clue discovery
+    first_visit = room_id not in game_state["visited_rooms"]
+    if first_visit:
+        game_state["visited_rooms"].append(room_id)
+        print_output("You look around carefully...")
+
+        clues_found_in_room = []
+        # Iterate through the *copy* of the list to avoid issues while modifying
+        for clue in game_state["clues"]:
+            # Find undiscovered clues matching this room's ID
+            # Also ensure the clue is meant to be found physically (not Testimony/Fact)
+            is_physical_clue = clue['origin'] in ["Physical Evidence", "Physical", "Environmental"] # Check origin type
+            if clue['location_id'] == room_id and not clue['discovered'] and is_physical_clue:
+                print_output(f"\n🔎 Clue Found!")
+                print_output(f"   {clue['description']}")
+                clue['discovered'] = True # Mark clue as discovered IN THE GAME STATE
+                clues_found_in_room.append(clue)
+
+                # Add formatted clue to player notes
+                note_text = f"Clue ({clue['type']}/{clue['origin']}) in {room_name}: {clue['description']}"
+                game_state["player_notes"].append(note_text)
+
+        if not clues_found_in_room:
+            print_output("You don't find any obvious clues right now.")
+
+    else: # Room already visited
+        print_output(f"You return to the {room_name}. You've already searched here thoroughly.")
+
+    # Always show the main menu after visiting a room
+    game_state["menu_state"] = "main"
     show_main_menu()
 
 def make_accusation():
