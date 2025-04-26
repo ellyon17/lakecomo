@@ -339,7 +339,7 @@ def display_dialogue_node():
         # --- Add this block to process actions ---
         action_to_process = node_data.get('action') # Get action string if it exists
         if action_to_process:
-            process_dialogue_action(action_to_process)
+        process_dialogue_action(action_to_process, game_state) # Pass game_state here
         # --- End of action processing block ---
 
         npc_text = node_data['text']
@@ -375,9 +375,11 @@ def end_dialogue():
 
 # --- Action Processing ---
 
-def process_dialogue_action(action_string):
+# --- Action Processing ---
+
+def process_dialogue_action(action_string, current_game_state): # Added current_game_state argument
     """Parses and executes actions defined in dialogue nodes."""
-    global game_state
+    # Removed 'global game_state' line
     if not action_string:
         return # No action defined
 
@@ -388,40 +390,33 @@ def process_dialogue_action(action_string):
             clue_id_to_discover = action_string.split("discover_")[1] # Get the part after "discover_"
 
             # Check if clue exists in master list (optional safety check)
+            # NOTE: Assumes CLUES_DATA is accessible globally or passed if needed
             clue_exists = any(clue['id'] == clue_id_to_discover for clue in CLUES_DATA)
             if not clue_exists:
                 print(f"[DEBUG] Action Error: Clue ID '{clue_id_to_discover}' not found in CLUES_DATA.")
                 return
 
-            # Check if clue is already discovered
-            if clue_id_to_discover not in game_state["notebook_discovered_clue_ids"]:
-                game_state["notebook_discovered_clue_ids"].append(clue_id_to_discover)
-                print_output("   [Notebook Updated]") # Give player feedback
-                # Find the clue description for potential future use/logging
-                # discovered_clue_info = next((clue for clue in CLUES_DATA if clue['id'] == clue_id_to_discover), None)
-                # if discovered_clue_info:
-                #    print(f"[DEBUG] Discovered: {discovered_clue_info['description']}")
-
+            # Check if clue is already discovered using the passed dictionary
+            if clue_id_to_discover not in current_game_state["notebook_discovered_clue_ids"]:
+                current_game_state["notebook_discovered_clue_ids"].append(clue_id_to_discover)
+                print_output("   [Notebook Updated]")
             # else:
                 # print(f"[DEBUG] Clue '{clue_id_to_discover}' was already discovered.")
 
         except IndexError:
             print(f"[DEBUG] Action Error: Invalid format for discover_clue action: {action_string}")
         except Exception as e:
+             # Use current_game_state here too if needed for more complex error handling
              print(f"[DEBUG] Error processing action '{action_string}': {e}")
 
     # --- Add more action types later? ---
+    # Example using current_game_state:
     # elif action_string == "update_alibi":
-    #     suspect_id = game_state["in_dialogue_with"]
-    #     node_id = game_state["current_dialogue_node_id"]
+    #     suspect_id = current_game_state["in_dialogue_with"]
+    #     node_id = current_game_state["current_dialogue_node_id"]
     #     npc_text = DIALOGUE_TREES[suspect_id][node_id]['text']
-    #     game_state['notebook_suspect_info'][suspect_id]['alibi_statement'] = npc_text
+    #     current_game_state['notebook_suspect_info'][suspect_id]['alibi_statement'] = npc_text
     #     print_output("   [Notebook Updated - Alibi Noted]")
-    # elif action_string.startswith("add_timeline_entry"):
-    #     entry_text = action_string.split("add_timeline_entry:")[1].strip()
-    #     game_state['notebook_timeline_entries'].append(entry_text)
-    #     print_output("   [Notebook Updated - Timeline]")
-    # --- End of future action ideas ---
 
 def talk_to_suspect(suspect):
     # suspect is a dictionary like {"id": "raffaella", "name": "Raffaella Patrizi", ...}
