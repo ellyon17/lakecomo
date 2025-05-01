@@ -317,7 +317,7 @@ def view_notebook():
                 clue_type = clue_data.get('type', 'Unknown Type') # Get clue type
 
                 # Format output
-                print_output(f"  * <b>[{clue_id}] ({clue_type})</b>: {desc}")
+                print_output(f"  * <b>[{clue_id}]</b>: {desc}")
                 print_output(f"    <span style='color: #aaa;'>  (Location: {loc_name}, Origin: {origin})</span>") # Dimmed metadata
                 print_output("") # Add a blank line for spacing
             else:
