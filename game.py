@@ -1,13 +1,16 @@
-from js import document
+# -*- coding: utf-8 -*-
+from js import document, console
 import random
 from collections import defaultdict
 from pyodide.ffi import create_proxy
+import json # Added for potential future use with loading/saving complex data
 
-from dialogue_data import DIALOGUE_TREES
+# --- Configuration ---
+DEBUG = True  # Set to False to disable debug print statements
 
 # --- Phase 1 Static Data ---
 
-# Ground Truth for the Murder
+# Ground Truth for the Murder (Example - can be randomized or loaded)
 GROUND_TRUTH = {
     "murderer": "Dakota Marino",
     "method": "Danshen extract poisoning (interaction with medication)",
@@ -20,554 +23,772 @@ GROUND_TRUTH = {
 GAME_INTRODUCTION = """
 Welcome to Murder Mystery on Lake Como
 
-The summer air hangs heavy as the phone jars you awake in your Milan apartment. It's just past 5:00 AM on June 11th. You are one of Milan's most renowned detectives, known for untangling the most complex cases, and your skills are urgently needed.
+The morning air is crisp as your car pulls up to the gates of the stunning Villa Patrizi on the shores of Lake Como. It's 6:00 AM on April 15th. You are Detective [Player Name], one of Milan's most renowned investigators, known for untangling the most complex cases.
 
-An urgent call summons you through the early morning light to the shores of Lake Como, specifically to the opulent Villa Patrizi. The villa's owner, Cristiano Patrizi, a powerful and self-made industrialist, has been found dead in his private study. The discovery was made around 4:00 AM by the distraught butler, Antonello Pisani.
+An urgent call summoned you here. The villa's owner, Cristiano Patrizi, a powerful and self-made industrialist, was found dead in his private study just hours ago, around 4:00 AM, by the distraught butler, Antonello Pisani.
 
-Just hours earlier, the villa was the scene of the final night of a lavish, weeks-long celebration for Cristiano's 50th birthday. What began as a grand affair with guests flying in from across the globe had simmered down over the last three days to an intimate gathering of close friends, family, and associates staying at the villa. Your investigation will need to reconstruct the events of June 10th, starting from 6:00 AM that morning, up until the body was discovered at 4:00 AM on June 11th.
+Yesterday, April 14th, was Cristiano's 50th birthday, and the villa hosted a lavish celebration. What began as a grand affair simmered down to an intimate gathering of close friends, family, and associates staying at the villa.
 
-Now, the laughter has died, replaced by suspicion and fear. The serene beauty of Lake Como hides a dark secret. Everyone who remained at the villa – both the esteemed guests and the dedicated staff – is now confined to the grounds. They are all suspects, and no one leaves until you uncover the truth.
-
-Meet the Suspects:
-* Cristiano Patrizi (Victim): Self‑made industrialist celebrating his 50th birthday at the villa.
-* Raffaella Patrizi (Cristiano's wife): Cristiano's elegant, younger wife, active in high society, passionate of the arts but perhaps feeling trapped.
-* Dr. Elisa Moretti (Personal Physician): Young and prominent Doctor from Milan, Dr. Moretti is also Patrizi's family doctor, and Cristiano’s longtime doctor, entrusted with his health. 
-* Marco Santini (Boater): Young and handsome, Marco is a new addition to the staff and is in charge of the boating needs of the Patrizi's family. Takes care of their yacht and always hangs around the docks.
-* Giovanna Russo (Chef): A celebrated Tuscan cook, famous for her extravagant way of presenting her food in the national food network. Was hired by Cristiano Patrizi to craft a lavish menu for tonight’s party.
-* Antonello Pisani (Butler): Has been taking care of the Villa for decades, is very precise and knows the villa and the family like the palm of his hand
-* Dakota Marino (American Wellness Influencer): A rich and famous wellness influencer that prescribes very out of the ordinary methods, is against traditional medicine and has an extreme diet and very specific early morning habits.
-* Russell Williams (British media mogul and Cristian's friend): Famous businessman from London, controls one of the biggest media empires in the world, although rumors are that traditional media is not as profitable as it once was.
-* Rose Williams (Russell's wife): Wife of Russell, manages the Williams foundation and is very active in charity work. She is classically posh and clearly comes from a British noble family. 
-* Gabriel DuPont (French F1 pilot): Close friends with Cristiano, they spend a long weekend every year in Montecarlo, partying together after the F1 race.
-* Sundeep Arora (CEO and tech bro): Rich engineer from Silicon Valley, with a humble background but reached success after launching a social media app to make short disappearing videos, very popular with the young audience.
-* Naomi Lee (model, Sundeep's girlfriend): American model, she’s Sundeep +1 and seems to have met everyone else here for the first time. It’s her first time in Italy and is very excited about the scenery. 
-
-
-Your Investigation:
-
-As the Detective, the villa and its grounds are yours to investigate.
-Explore Locations: Search every room, from the grand Library to the shadowy Boathouse, for physical clues – a dropped item, a revealing note, environmental details that seem out of place.
-Converse with Suspects: Interview everyone present. Question their alibis, probe their motives, and uncover their secrets. Listen carefully – testimonies might conflict, revealing lies or hidden truths. Remember, these individuals have complex relationships and histories; what they know about each other can be as crucial as what they reveal about themselves.
-Discover and Log Clues: Every piece of evidence, physical or testimonial, will be recorded in your detective's notebook. Analyze your findings, connect the dots, and separate the facts from the red herrings.
-
-Your goal is to piece together the events of the last 24 hours, identify the murderer, determine their motive, and pinpoint the method of death. Only when you are certain you have solved the puzzle should you make your accusation.
-
-The truth is hidden somewhere within the walls of Villa Patrizi. It's up to you to bring it into the light. Good luck, Detective.
+Now, the laughter has died, replaced by suspicion and fear. The serene beauty of Lake Como hides a dark secret. Everyone who remained at the villa is now confined to the grounds. They are all suspects, and no one leaves until you uncover the truth.
 """
 
-# Locations (Based on Script)
-# We can enhance the existing `areas` and `room_templates` slightly
-# Let's redefine them here for clarity based on the Script locations.
-LOCATIONS = [
-    # Villa Interior
-    {"id": "library", "name": "Library", "area": "Villa Interior", "description": "Lined with floor-to-ceiling bookshelves, filled with old volumes. Smells faintly of leather and dust."},
-    {"id": "dining_room", "name": "Dining Room", "area": "Villa Interior", "description": "A grand room with a long, polished table. Remnants of last night's lavish dinner have been cleared, but the formal setting remains."},
-    {"id": "study", "name": "Cristiano's Study", "area": "Villa Interior", "description": "Cristiano's private sanctuary. Expensive furniture, a large desk, and personal belongings. The air feels heavy."},
-    {"id": "kitchen", "name": "Kitchen", "area": "Villa Interior", "description": "A large, professional kitchen. Gleaming stainless steel surfaces, now quiet after the party preparations."},
-    {"id": "guest_bedrooms", "name": "Guest Bedrooms Hallway", "area": "Villa Interior", "description": "A carpeted hallway leading to the various guest suites."}, # Simplified for now
-    {"id": "staircase", "name": "Grand Staircase", "area": "Villa Interior", "description": "An imposing marble staircase connecting the main floors."},
-    {"id": "living_room", "name": "Living Room", "area": "Villa Interior", "description": "A comfortable but formal room with sofas, armchairs, and a grand piano."},
-    # Gardens
-    {"id": "fountain_area", "name": "Fountain Area", "area": "Gardens", "description": "A central courtyard dominated by an ornate marble fountain."},
-    {"id": "greenhouse", "name": "Greenhouse", "area": "Gardens", "description": "Filled with exotic plants and the earthy smell of damp soil. Feels humid."},
-    {"id": "pool_bar", "name": "Swimming Pool & Bar", "area": "Gardens", "description": "An inviting pool area with lounge chairs and a well-stocked outdoor bar."},
-    # Docks
-    {"id": "yacht_deck", "name": "Patrizi's Yacht Deck", "area": "Docks", "description": "The deck of Cristiano's luxurious yacht, moored at the private pier."},
-    {"id": "pier", "name": "Pier", "area": "Docks", "description": "A sturdy wooden pier extending into the lake."},
-    {"id": "gazebo", "name": "Gazebo", "area": "Docks", "description": "A small, elegant gazebo near the water's edge, offering a view of the lake."},
-    {"id": "boathouse", "name": "Boathouse", "area": "Docks", "description": "Contains smaller boats and equipment. Smells of lake water and oil."}
-]
+# --- Suspects (Phase 1 - Basic Info) ---
+# Detailed bios, motives, alibis, and dialogue trees would expand this.
+SUSPECTS = {
+    "Antonello Pisani": {"role": "Butler", "description": "Loyal, anxious, discovered the body."},
+    "Bianca Rossi": {"role": "Business Rival", "description": "Sharp, competitive, had recent disputes with Cristiano."},
+    "Dr. Elara Moretti": {"role": "Personal Physician", "description": "Calm, professional, concerned about Cristiano's health."},
+    "Leo Gallo": {"role": "Estranged Nephew", "description": "Artistic, resentful, recently cut off financially."},
+    "Sofia Bianchi": {"role": "Younger Fiancée", "description": "Charming, possibly hiding secrets, stands to inherit."},
+    "Dakota Marino": {"role": "Personal Chef", "description": "Passionate, knowledgeable about herbs and remedies, recently argued with Cristiano."},
+}
 
-# Suspects (Based on Script Bios - simplified for now, will add more detail later)
-# Example for Raffaella (add similarly to all others):
-# {"id": "raffaella", "name": "Raffaella Patrizi", "bio": "...", 'dialogue_start_node': 'START'},
-# ... do this for all suspects in the SUSPECTS_DATA list ...
+# --- Locations (Phase 1 - Basic Descriptions) ---
+LOCATIONS = {
+    "Foyer": "The grand entrance hall of the villa. Doors lead to the Living Room, Dining Room, and stairs go up.",
+    "Living Room": "Luxurious, with plush seating, a grand piano, and large windows overlooking the lake.",
+    "Dining Room": "Elegant, with a long table still showing remnants of last night's dinner.",
+    "Kitchen": "Modern and spacious, the domain of the chef.",
+    "Study": "Cristiano's private office, the scene of the crime. Currently sealed.",
+    "Library": "A quiet room filled with books, comfortable chairs.",
+    "Guest Wing Hallway": "Leads to the guest bedrooms.",
+    "Bianca's Room": "Guest room.",
+    "Leo's Room": "Guest room.",
+    "Sofia's Room": "Guest room (connected to Master Suite).",
+    "Master Suite": "Cristiano and Sofia's bedroom.",
+    "Staff Quarters Hallway": "Leads to staff rooms.",
+    "Antonello's Room": "Staff room.",
+    "Dakota's Room": "Staff room.",
+    "Dr. Moretti's Room": "Guest room (in main wing).",
+    "Terrace": "Overlooks the lake, access from Living Room and Dining Room.",
+    "Greenhouse": "Accessed via the Terrace, contains various plants.",
+    "Gardens": "Extensive grounds surrounding the villa."
+}
 
-# --- Updated SUSPECTS_DATA Example (showing first few with the new key) ---
-SUSPECTS_DATA = [
-    {"id": "raffaella", "name": "Raffaella Patrizi", "bio": "Cristiano's elegant, younger wife, active in high society.", 'dialogue_start_node': 'START'},
-    {"id": "moretti", "name": "Dr. Elisa Moretti", "bio": "The sharp, young family physician.", 'dialogue_start_node': 'START'},
-    {"id": "marco", "name": "Marco Santini", "bio": "The handsome young boatman, new to the staff.", 'dialogue_start_node': 'START'},
-    {"id": "giovanna", "name": "Giovanna Russo", "bio": "The celebrated Tuscan chef, proud and fiery.", 'dialogue_start_node': 'START'},
-    {"id": "antonello", "name": "Antonello Pisani", "bio": "The meticulous, long-serving butler.", 'dialogue_start_node': 'START'},
-    {"id": "dakota", "name": "Dakota Marino", "bio": "The American wellness influencer.", 'dialogue_start_node': 'START'},
-    {"id": "russell", "name": "Russell Williams", "bio": "The powerful British media mogul.", 'dialogue_start_node': 'START'},
-    {"id": "rose", "name": "Rose Williams", "bio": "Russell's elegant wife, involved in charity.", 'dialogue_start_node': 'START'},
-    {"id": "gabriel", "name": "Gabriel DuPont", "bio": "The charming French F1 pilot.", 'dialogue_start_node': 'START'},
-    {"id": "sundeep", "name": "Sundeep Arora", "bio": "The ambitious Silicon Valley tech CEO.", 'dialogue_start_node': 'START'},
-    {"id": "naomi", "name": "Naomi Lee", "bio": "Sundeep's model girlfriend.", 'dialogue_start_node': 'START'}
-]
-# --- End of Updated SUSPECTS_DATA ---
+# --- Clues (Phase 1 - Example Set) ---
+# Format: {location: {clue_id: {"description": "...", "found": False, "details": "...", "type": "Object/Observation/Document"}}}
+CLUES = {
+    "Study": {
+        "clue_body": {"description": "Cristiano Patrizi's body.", "found": False, "details": "Lying near his desk. Initial observation suggests no obvious signs of struggle.", "type": "Observation"},
+        "clue_glass": {"description": "An overturned glass near the desk.", "found": False, "details": "Seems to have held a dark liquid, possibly whiskey. Smells faintly bitter.", "type": "Object"},
+        "clue_letter": {"description": "A crumpled letter on the desk.", "found": False, "details": "It's a threatening business letter from Bianca Rossi's company.", "type": "Document"}
+    },
+    "Living Room": {
+        "clue_music": {"description": "Sheet music on the piano.", "found": False, "details": "Jazz standards and some modern pop songs.", "type": "Object"},
+         "clue_lipstick_glass": {"description": "An empty cocktail glass with lipstick traces.", "found": False, "details": "Left on the piano. The lipstick is a vibrant red shade.", "type": "Object"}
+    },
+     "Greenhouse": {
+        "clue_herbs": {"description": "Various herbs, some medicinal.", "found": False, "details": "Includes a prominent section of Danshen (Salvia miltiorrhiza), known for cardiovascular effects.", "type": "Observation"}
+    },
+    "Dakota's Room": {
+        "clue_herb_book": {"description": "A book on medicinal herbs.", "found": False, "details": "Open to a page detailing interactions between Danshen and heart medications.", "type": "Document"}
+    },
+     "Dr. Moretti's Room": {
+        "clue_medical_bag": {"description": "Dr. Moretti's medical bag.", "found": False, "details": "Contains standard medical supplies, including syringes and vials. Also contains prescription notes for Cristiano's heart condition.", "type": "Object"}
+    }
+    # Add more clues for other locations
+}
 
-# Clues (Based on Script - using 'location_id' matching LOCATIONS above)
-CLUES_DATA = [
-    # Direct Clues
-    {"id": "clue01", "location_id": "study", "description": "Residue of a potent, dark green herbal substance, identified as Danshen extract, found in Cristiano's nightcap glass.", "type": "Direct", "origin": "Physical Evidence", "discovered": False},
-    {"id": "clue02", "location_id": "dakota_bedroom", "description": "An empty, small, dark glass vial with a minimalist silver leaf logo ('Dakota's Radiance' brand), containing Danshen extract residue, found in trash.", "type": "Direct", "origin": "Physical Evidence", "discovered": False}, # Note: Need a 'dakota_bedroom' location
-    {"id": "clue03", "location_id": "greenhouse", "description": "Water-damaged notes discussing Danshen extract dosages and mentioning 'potential cardiac sensitivity'.", "type": "Direct", "origin": "Physical Evidence", "discovered": False},
-    # Circumstantial Clues
-    {"id": "clue04", "location_id": "dining_room", "description": "Testimony: Dakota argued heatedly with Dr. Moretti over Cristiano's health during dinner.", "type": "Circumstantial", "origin": "Testimony", "discovered": False},
-    {"id": "clue05", "location_id": "living_room", "description": "Testimony: Cristiano argued sharply with Raffaella about Gabriel during Naomi's performance.", "type": "Circumstantial", "origin": "Testimony", "discovered": False},
-    {"id": "clue06", "location_id": "kitchen", "description": "Testimony: Giovanna was heard shouting threats about Cristiano preferring Dakota's 'weeds'.", "type": "Circumstantial", "origin": "Testimony", "discovered": False},
-    {"id": "clue07", "location_id": "pool_bar", "description": "Testimony: Antonello overheard Cristiano cutting off Russell financially during Aperitivo.", "type": "Circumstantial", "origin": "Testimony", "discovered": False},
-    {"id": "clue08", "location_id": "gazebo", "description": "Testimony: Cristiano rudely dismissed Sundeep near the gazebo in the afternoon.", "type": "Circumstantial", "origin": "Testimony", "discovered": False}, # Adjusted location slightly
-    {"id": "clue09", "location_id": "staircase", "description": "Testimony: Marco saw Gabriel looking flustered leaving Raffaella's room vicinity.", "type": "Circumstantial", "origin": "Testimony", "discovered": False},
-    {"id": "clue10", "location_id": "study", "description": "A freshly poured, untouched glass of expensive French Cognac sits beside the overturned nightcap glass. The bottle is open but nearly full.", "type": "Circumstantial", "origin": "Physical Evidence", "discovered": False},
-    {"id": "clue11", "location_id": "raffaella_bedroom", "description": "A hidden jeweler's box containing expensive F1-themed cufflinks (Gabriel's style).", "type": "Circumstantial", "origin": "Physical Evidence", "discovered": False}, # Note: Need a 'raffaella_bedroom' location
-    {"id": "clue12", "location_id": "russell_bedroom", "description": "Crumpled bank statements under mattress show large overdrafts and defaulted payments to offshore entities.", "type": "Circumstantial", "origin": "Physical Evidence", "discovered": False}, # Note: Need a 'russell_bedroom' location
-    {"id": "clue13", "location_id": "moretti_bedroom", "description": "Dr. Moretti's notebook details Cristiano's recent symptoms (arrythmia, dizziness) and questions unknown supplements.", "type": "Circumstantial", "origin": "Physical Evidence", "discovered": False}, # Note: Need a 'moretti_bedroom' location
-    {"id": "clue14", "location_id": "study", "description": "Printed email on desk: Cristiano firmly rejecting Antonello's son's business proposal.", "type": "Circumstantial", "origin": "Physical Evidence", "discovered": False},
-    {"id": "clue15", "location_id": "pool_bar", "description": "Testimony: Witness saw Marco and Gabriel argue heatedly near pool bar, then both head towards docks separately.", "type": "Circumstantial", "origin": "Testimony", "discovered": False},
-    {"id": "clue16", "location_id": "yacht_deck", "description": "A slightly scratched 'Dupont Racing' engraved lighter found wedged in yacht deck seating.", "type": "Circumstantial", "origin": "Physical Evidence", "discovered": False},
-    {"id": "clue17", "location_id": "living_room", "description": "Testimony: Raffaella made dismissive comments about Naomi's 'American' pop singing vs. opera.", "type": "Circumstantial", "origin": "Testimony", "discovered": False},
-    # Red Herring Clues
-    {"id": "clue18", "location_id": "study", "description": "A single strand of long, glossy dark hair (matching Naomi's) caught on the victim's chair armrest.", "type": "Red Herring", "origin": "Physical Evidence", "discovered": False},
-    {"id": "clue19", "location_id": "library", "description": "Torn piece of stationery in trash: '...must end this dangerous liaison before he discovers everything...'", "type": "Red Herring", "origin": "Physical Evidence", "discovered": False},
-    {"id": "clue20", "location_id": "kitchen", "description": "Container of potent Calabrian chili flakes left open near spice rack, away from main cooking area.", "type": "Red Herring", "origin": "Physical Evidence", "discovered": False},
-    # Exonerating Clues (Represented as Testimony/Facts the player discovers)
-    # Note: Exonerating clues often come from verifying alibis via testimony or logs,
-    # so they might be revealed during dialogue rather than found physically.
-    # We'll handle revealing these later, but list them here for reference.
-    {"id": "clue21", "location_id": "security_office", "description": "Fact: Security logs & testimony confirm Russell/Rose were in their suite 11 PM - 4 AM.", "type": "Exonerating", "origin": "Testimony/Log", "discovered": False},
-    {"id": "clue22", "location_id": "sundeep_bedroom", "description": "Fact: Testimony (Naomi, Dr. Moretti hearing shouts) confirms Sundeep argued then passed out drunk 11:30 PM - 1 AM+.", "type": "Exonerating", "origin": "Testimony", "discovered": False},
-    {"id": "clue23", "location_id": "gabriel_bedroom", "description": "Fact: Phone logs/testimony confirm Gabriel was on a video call to California 1:05 AM - 3:38 AM.", "type": "Exonerating", "origin": "Testimony/Log", "discovered": False},
-    {"id": "clue24", "location_id": "staff_quarters", "description": "Fact: Testimony/Receipt confirms Giovanna left the villa grounds ~10:30 PM, returned next morning.", "type": "Exonerating", "origin": "Testimony/Receipt", "discovered": False},
-    # Environmental Clues
-    {"id": "clue25", "location_id": "study", "description": "The heavy crystal nightcap tumbler lies overturned on the Persian rug near the chair.", "type": "Environmental", "origin": "Physical Evidence", "discovered": False},
-    {"id": "clue26", "location_id": "study", "description": "The room feels uncomfortably warm; the A/C thermostat is switched off.", "type": "Environmental", "origin": "Physical Evidence", "discovered": False},
-    {"id": "clue27", "location_id": "study", "description": "A French window is slightly ajar, letting in the scent of night-blooming jasmine.", "type": "Environmental", "origin": "Physical Evidence", "discovered": False},
-    {"id": "clue28", "location_id": "gardens_path", "description": "The flagstone path towards the Greenhouse is damp from a recent night shower.", "type": "Environmental", "origin": "Physical Evidence", "discovered": False}, # Needs location 'gardens_path'
-    {"id": "clue29", "location_id": "dining_room", "description": "Faint aroma of cigars/perfume lingers. Table formally set under cleanup cloths.", "type": "Environmental", "origin": "Physical Evidence", "discovered": False},
-    {"id": "clue30", "location_id": "living_room", "description": "Sheet music for pop/jazz standards scattered on piano; empty cocktail glass nearby.", "type": "Environmental", "origin": "Physical Evidence", "discovered": False}
-]
+# --- Dialogue Trees (Simplified Example - requires dialogue_data.py) ---
+# Moved to dialogue_data.py for better organization
+try:
+    from dialogue_data import DIALOGUE_TREES
+    if DEBUG: print("Successfully imported DIALOGUE_TREES")
+except ImportError:
+    if DEBUG: print("Warning: dialogue_data.py not found. Using placeholder dialogue.")
+    DIALOGUE_TREES = { # Placeholder if file missing
+        "Antonello Pisani": {
+            "start": {"text": "Detective? Oh, thank goodness you're here. It's terrible, just terrible.", "options": {"ask_discovery": "Tell me about finding Mr. Patrizi.", "ask_evening": "What happened last night?"}, "leads_to": {"ask_discovery": "discovery_details", "ask_evening": "evening_overview"}},
+            "discovery_details": {"text": "I came in around 4 AM to prepare his morning coffee... the study door was ajar... I saw him...", "options": {}, "ends_dialogue": True},
+            "evening_overview": {"text": "The party ended late. A few guests remained. Mr. Patrizi seemed... tense.", "options": {}, "ends_dialogue": True}
+        },
+         # Add basic trees for other suspects
+         "Bianca Rossi": {
+            "start": {"text": "Detective. A tragic event. Cristiano and I had our differences, but this...", "options": {"ask_business": "What were your business dealings?"}, "leads_to": {"ask_business": "business_talk"}},
+            "business_talk": {"text": "We were rivals, yes, but competitive, not criminal.", "options": {}, "ends_dialogue": True}
+         }
+    }
 
-
-# --- End of Phase 1 Static Data ---
 
 # --- Game State ---
 game_state = {
-    # Core game data holders (populated by init_game)
-    "ground_truth": {},
-    "rooms": [],
-    "suspects": [],
-    "clues": [], # Holds ALL clues (static data), discovered status changes here
-
-    # --- Notebook Data ---
-    "notebook_discovered_clue_ids": [], # List of IDs of clues player has found
-    "notebook_suspect_info": {}, # Dict: {suspect_id: {"bio": "...", "alibi_statement": None, "notes": []}, ...}
-    "notebook_timeline_entries": [], # List of strings representing timeline events discovered
-    # --- End of Notebook Data ---
-
-    # Player state / Location tracking
-    "current_location_id": None,
-    "visited_rooms": [], # Tracks first visits for clue discovery
-
-    # State management
-    "initialized": False,
-    "menu_state": "main", # Current game menu/mode
-    "in_dialogue_with": None, # ID of suspect in dialogue
-    "current_dialogue_node_id": None, # Current node in dialogue tree
-
-    # Accusation state
-    "accused": False,
-    "in_accusation": False, # (This key was in the original, kept for potential use)
-
-    # Basic Time Tracking (Placeholder)
-    "current_game_time": None,
+    "current_location": "Foyer",
+    "player_name": "Investigator", # Can be set by player later
+    "inventory": set(), # Stores clue_ids found by the player
+    "suspect_states": {suspect: {"met": False, "dialogue_node": "start"} for suspect in SUSPECTS},
+    "current_time": "April 15th, 6:00 AM", # Simple time progression
+    "crime_details_known": defaultdict(lambda: None), # Stores player deductions
+    "menu_state": "main", # Controls current interaction mode: main, move, look, talk, inventory, accuse, dialogue
+    "talking_to": None # Which suspect is currently being interviewed
 }
-# --- End Game State Definition ---
 
-# --- Utility Functions ---
-def print_output(text):
-    try:
-        out = document.getElementById('output')
-        out.innerHTML += text + "<br/>"
-        out.scrollTop = out.scrollHeight
-    except Exception as e:
-        print("Error in print_output:", e)
+# --- Helper Functions ---
 
+def print_output(message):
+    """Appends message to the game's output area in the HTML."""
+    output_area = document.getElementById('output')
+    # Sanitize message slightly to prevent accidental HTML injection
+    # In a real game, use a proper sanitization library
+    sanitized_message = message.replace('<', '&lt;').replace('>', '&gt;')
+    output_area.innerHTML += f"<p>{sanitized_message}</p>"
+    output_area.scrollTop = output_area.scrollHeight # Auto-scroll
 
-# --- Game Initialization ---
-def init_game():
-    # Load static data into game_state
-    # Create deep copies to avoid modifying the original data during gameplay
-    game_state["ground_truth"] = dict(GROUND_TRUTH)
-    game_state["rooms"] = [dict(loc) for loc in LOCATIONS] # Using new LOCATIONS list
-    game_state["suspects"] = [dict(sus) for sus in SUSPECTS_DATA] # Using new SUSPECTS_DATA
-    game_state["clues"] = [dict(clue) for clue in CLUES_DATA] # Using new CLUES_DATA
+def clean_input(text):
+    """Basic cleaning for user input."""
+    return text.lower().strip()
 
-    # --- Initialize Notebook ---
-    game_state["notebook_discovered_clue_ids"] = []
-    game_state["notebook_timeline_entries"] = []
-    game_state["notebook_suspect_info"] = {}
-    # Populate initial suspect info for the notebook
-    for sus_data in SUSPECTS_DATA:
-        sus_id = sus_data['id']
-        game_state["notebook_suspect_info"][sus_id] = {
-            "name": sus_data['name'],
-            "bio": sus_data['bio'],
-            "alibi_statement": None, # Player needs to learn this
-            "notes": [] # Player might add notes later, or we log key info here
-        }
-    # --- End Notebook Init ---
+def get_available_actions():
+    """Returns a list of actions available in the current state."""
+    state = game_state["menu_state"]
+    actions = ["help"] # Help is always available
 
-    # Initialize OTHER player state
-    # game_state["player_notes"] = [] # MAKE SURE THIS OLD LINE IS REMOVED OR COMMENTED
-    game_state["visited_rooms"] = [] # This is correct
-    game_state["accused"] = False
-    game_state["current_location_id"] = None # Player starts nowhere initially
-    game_state["menu_state"] = "main"
-    game_state["initialized"] = True
+    if state == "main":
+        actions.extend(["move", "look", "talk", "inventory", "accuse", "time"])
+    elif state == "move":
+        actions.append("back") # Go back to main menu
+        # Could also list available directions/locations here
+    elif state == "look":
+        actions.append("around") # Look around the current location
+        actions.append("clue <clue_id>") # Examine a found clue
+        actions.append("back")
+    elif state == "talk":
+        actions.extend(list(SUSPECTS.keys())) # List suspects to talk to
+        actions.append("back")
+    elif state == "inventory":
+         actions.append("list") # List found clues
+         actions.append("back")
+    elif state == "accuse":
+        actions.append("back")
+        # Accusation requires specifying details, handled in handle_input
+    elif state == "dialogue":
+        # Actions are dialogue choices, handled dynamically
+         actions.append("goodbye") # Option to end conversation
 
-    # Show the intro text
-    show_intro()
-    # Show the main menu to start
-    show_main_menu()
-# --- End Game Initialization ---
+    return actions
 
-# --- Menu Displays ---
-def show_intro():
-    print_output(GAME_INTRODUCTION) # Display the intro text we defined
-    # Optional: Add a small prompt like "Press Enter to continue..." if needed.
+def display_help():
+    """Shows available commands based on the current state."""
+    actions = get_available_actions()
+    state_desc = game_state["menu_state"]
+    if game_state["menu_state"] == "dialogue":
+        state_desc = f"talking to {game_state['talking_to']}"
+
+    help_text = f"--- Help (Current mode: {state_desc}) ---\n"
+    help_text += "Available commands:\n"
+    if game_state["menu_state"] == "main":
+         help_text += "  move        - Change your location\n"
+         help_text += "  look        - Examine your surroundings or clues\n"
+         help_text += "  talk        - Speak with a suspect\n"
+         help_text += "  inventory   - Check the clues you have found\n"
+         help_text += "  accuse      - Make an accusation (when ready)\n"
+         help_text += "  time        - Check the current game time\n"
+         help_text += "  help        - Show this help message"
+    elif game_state["menu_state"] == "move":
+         help_text += "  <location_name> - Go to a specific connected location\n"
+         help_text += "  list            - List accessible locations from here\n"
+         help_text += "  back            - Return to the main menu"
+    elif game_state["menu_state"] == "look":
+         help_text += "  around          - Describe the current location and any obvious clues\n"
+         help_text += "  <clue_id>       - Examine a specific clue you see (e.g., 'look clue_glass')\n"
+         help_text += "  back            - Return to the main menu"
+    elif game_state["menu_state"] == "talk":
+         help_text += "  <suspect_name>  - Start a conversation (e.g., 'talk Antonello Pisani')\n"
+         help_text += "  list            - List suspects present or available\n"
+         help_text += "  back            - Return to the main menu"
+    elif game_state["menu_state"] == "inventory":
+        help_text += "  list            - List all clues you have collected\n"
+        help_text += "  examine <clue_id> - Look at details of a collected clue\n"
+        help_text += "  back            - Return to the main menu"
+    elif game_state["menu_state"] == "accuse":
+        help_text += "  Usage: accuse <suspect_name> with <method> for <motive>\n"
+        help_text += "  Example: accuse Leo Gallo with Poison for Inheritance\n"
+        help_text += "  back            - Return to the main menu"
+    elif game_state["menu_state"] == "dialogue":
+        help_text += "  <number>        - Choose a dialogue option by its number\n"
+        help_text += "  goodbye         - End the conversation\n"
+        help_text += "  help            - Show this help message (during dialogue)"
+        # Dialogue options are displayed separately
+
+    print_output(help_text)
+
 
 def show_main_menu():
-    print_output("\nMain Menu:")
-    print_output("1. Visit a room")
-    print_output("2. View your notes")
-    print_output("3. Make an accusation")
-    print_output("4. Talk to a suspect")
-    print_output("Enter the number of your choice:")
+    """Displays the main menu options."""
+    print_output("\n--- Main Menu ---")
+    print_output(f"Location: {game_state['current_location']}")
+    print_output(f"Time: {game_state['current_time']}")
+    print_output("What would you like to do? (move, look, talk, inventory, accuse, time, help)")
 
-def show_room_menu():
-    print_output("\nWhere would you like to go?")
-    for idx, room in enumerate(game_state["rooms"], 1):
-        print_output(f"{idx}. {room['name']} ({room['area']})")
-    print_output("Enter the number of the room to visit:")
+def update_time(minutes=10):
+     """Advances game time (very basic)."""
+     # This needs a proper time system later
+     current_time_str = game_state["current_time"]
+     # Rudimentary time advance - replace with datetime objects for real calculation
+     parts = current_time_str.split(", ")
+     time_parts = parts[1].split(":")
+     hour = int(time_parts[0])
+     minute = int(time_parts[1].split(" ")[0])
+     am_pm = time_parts[1].split(" ")[1]
 
-def visit_room(room):
-    # room is a dictionary like {"id": "study", "name": "Cristiano's Study", ...}
-    room_id = room['id']
-    room_name = room['name']
-    game_state["current_location_id"] = room_id # Track current location
+     minute += minutes
+     hour += minute // 60
+     minute %= 60
 
-    print_output(f"\n--- Entering {room_name} ---")
-    print_output(room.get('description', 'It looks like a room.')) # Show room description
+     if hour >= 12:
+         if am_pm == "AM":
+             am_pm = "PM"
+         elif hour > 12: # Handle 12 PM case
+            hour -= 12
+     if hour >= 12 and am_pm == "PM": # Rollover past midnight (shouldn't happen much in phase 1)
+         hour -=12
+         am_pm = "AM"
+         # Advance day? Need date tracking for that.
 
-    # Check if room has been visited before for clue discovery
-    first_visit = room_id not in game_state["visited_rooms"]
-    if first_visit:
-        game_state["visited_rooms"].append(room_id)
-        print_output("You look around carefully...")
+     game_state["current_time"] = f"{parts[0]}, {hour:02d}:{minute:02d} {am_pm}"
+     if DEBUG: print(f"DEBUG: Time advanced to {game_state['current_time']}")
 
-        clues_found_in_room = []
-        # Iterate through the *copy* of the list to avoid issues while modifying
-        for clue in game_state["clues"]:
-            # Find undiscovered clues matching this room's ID
-            # Also ensure the clue is meant to be found physically (not Testimony/Fact)
-            is_physical_clue = clue['origin'] in ["Physical Evidence", "Physical", "Environmental"] # Check origin type
-            if clue['location_id'] == room_id and not clue['discovered'] and is_physical_clue:
-                print_output(f"\n🔎 Clue Found!")
-                print_output(f"   {clue['description']}")
-                clue['discovered'] = True # Mark clue as discovered IN THE GAME STATE
-                clues_found_in_room.append(clue)
 
-                # --- Add clue ID to notebook ---
-                if clue['id'] not in game_state["notebook_discovered_clue_ids"]:
-                    game_state["notebook_discovered_clue_ids"].append(clue['id'])
-                    # We could print [Notebook Updated] here too, but maybe too noisy?
-                # --- End notebook update ---
+# --- Action Handlers ---
 
-        if not clues_found_in_room:
-            print_output("You don't find any obvious clues right now.")
-
-    else: # Room already visited
-        print_output(f"You return to the {room_name}. You've already searched here thoroughly.")
-
-    # Always show the main menu after visiting a room
-    game_state["menu_state"] = "main"
-    show_main_menu()
-
-def make_accusation():
-    print_output("\nWho do you accuse as the murderer?")
-    for idx, s in enumerate(game_state["suspects"], 1):
-        print_output(f"{idx}. {s['name']}")
-    print_output("Enter the number of the suspect:")
-
-def process_accusation(cmd):
-    try:
-        choice = int(cmd)
-    except:
-        print_output("Please enter a number.")
-        return
-    if 1 <= choice <= len(game_state["suspects"]):
-        accused = game_state["suspects"][choice - 1]
-        if accused["is_murderer"]:
-            print_output(f"Correct! The {accused['name']} committed the murder by {game_state['cause']} due to {game_state['motive']}.")
+def handle_move(command_parts):
+    """Handles the 'move' command."""
+    if len(command_parts) < 2 or command_parts[1] == 'list':
+        # Basic connectivity - needs proper map/graph later
+        # Example: List locations accessible from Foyer
+        accessible = []
+        if game_state["current_location"] == "Foyer":
+            accessible = ["Living Room", "Dining Room", "Stairs (not implemented)"] # Stairs lead conceptually
+        elif game_state["current_location"] == "Living Room":
+             accessible = ["Foyer", "Terrace", "Dining Room"]
+        elif game_state["current_location"] == "Dining Room":
+             accessible = ["Foyer", "Terrace", "Kitchen"]
+        # Add more connections for other locations
         else:
-            print_output(f"Wrong! The murderer was the {game_state['murderer']['name']}.")
-        print_output("Game over. Refresh to play again.")
-        disable_input()
+            accessible.append("Foyer (example back connection)") # Default fallback
+
+        print_output(f"From {game_state['current_location']}, you can access:")
+        for loc in accessible:
+            print_output(f"- {loc}")
+        print_output("Enter 'move <location_name>' to go there, or 'back'.")
+        return
+
+    destination = " ".join(command_parts[1:]).title() # Allow multi-word locations
+
+    # Add validation: Is destination a valid location AND accessible from here?
+    # For now, just check if it's a known location. Accessibility needs map data.
+    if destination in LOCATIONS:
+        game_state["current_location"] = destination
+        game_state["menu_state"] = "main"
+        update_time(5) # Moving takes time
+        print_output(f"You move to the {destination}.")
+        print_output(LOCATIONS[destination])
+        show_main_menu()
+    elif destination == "Back":
+         game_state["menu_state"] = "main"
+         show_main_menu()
     else:
-        print_output("Invalid suspect.")
-        make_accusation()
+        print_output(f"'{destination}' is not a place you recognize or can access from here.")
+        # Re-show move help/options
+        handle_move(["move", "list"])
 
-def disable_input():
-    btn = document.getElementById('submit')
-    btn.removeEventListener('click', on_submit)
-    btn.disabled = True
-    document.getElementById('command').disabled = True
 
-# --- Talk to Suspects ---
-def show_suspect_menu():
-    print_output("\nWho would you like to talk to?")
-    for idx, s in enumerate(game_state["suspects"], 1):
-        print_output(f"{idx}. {s['name']}")
-    print_output("Enter the number of the suspect:")
+def handle_look(command_parts):
+    """Handles the 'look' command."""
+    location = game_state["current_location"]
 
-def display_dialogue_node():
-    suspect_id = game_state["in_dialogue_with"]
-    node_id = game_state["current_dialogue_node_id"]
-    suspect_name = ""
+    if len(command_parts) < 2 or command_parts[1] == 'around':
+        print_output(f"--- Looking around the {location} ---")
+        print_output(LOCATIONS[location])
+        # Check for visible clues in the current location
+        found_any = False
+        if location in CLUES:
+            print_output("\nYou notice:")
+            for clue_id, clue_data in CLUES[location].items():
+                 # Only show clues not yet 'found' (added to inventory)
+                 # Or maybe always show description, but only allow 'examine' if found? Let's show if not found.
+                if clue_id not in game_state["inventory"]:
+                    print_output(f"- ({clue_id}): {clue_data['description']}")
+                    found_any = True
+        if not found_any:
+            print_output("\nNothing immediately catches your eye as a clue.")
+        print_output("\nUse 'look <clue_id>' to examine something specific, or 'back'.")
 
-    # Find the suspect's name (optional but good for display)
-    for s in game_state["suspects"]:
-        if s['id'] == suspect_id:
-            suspect_name = s['name']
-            break
-
-    # Try to get the dialogue node data
-    try:
-        node_data = DIALOGUE_TREES[suspect_id][node_id]
-
-        # --- Add this block to process actions ---
-        action_to_process = node_data.get('action') # Get action string if it exists
-        if action_to_process:
-            process_dialogue_action(action_to_process, game_state)
-        # --- End of action processing block ---
-
-        npc_text = node_data['text']
-        options = node_data.get('options', [])
-
-        # Display NPC text
-        print_output(f"\n{suspect_name}: \"{npc_text}\"")
-
-        # Display Player Options
-        if options:
-            print_output("\nYour response:")
-            for idx, option in enumerate(options):
-                print_output(f"{idx + 1}. {option['text']}")
-            print_output("Enter the number of your choice:")
+    elif command_parts[1] == 'clue' and len(command_parts) > 2:
+        clue_id_to_find = command_parts[2]
+        if location in CLUES and clue_id_to_find in CLUES[location]:
+            clue_data = CLUES[location][clue_id_to_find]
+            if clue_id_to_find not in game_state["inventory"]:
+                print_output(f"--- Examining {clue_id_to_find} ---")
+                print_output(clue_data["details"])
+                game_state["inventory"].add(clue_id_to_find)
+                update_time(2) # Examining takes a moment
+                print_output(f"(Added '{clue_id_to_find}' to your inventory)")
+                if DEBUG: print(f"DEBUG: Inventory: {game_state['inventory']}")
+            else:
+                print_output(f"You have already examined {clue_id_to_find}. Check your inventory.")
         else:
-            # If no options, maybe automatically end? Or needs an explicit END node.
-            # For now, assume an END node should always have options leading out.
-            print_output("The conversation seems to be over.")
-            # End dialogue automatically if no options? Risky, let's rely on END node.
-            # end_dialogue() # We might need an end_dialogue helper function later
+             print_output(f"You don't see '{clue_id_to_find}' here to examine.")
+        # Stay in 'look' mode
+        print_output("Look around again, examine another clue, or type 'back'.")
 
-    except KeyError:
-        print_output(f"\n[Error: Dialogue node '{node_id}' not found for {suspect_name}. Ending conversation.]")
-        end_dialogue() # End dialogue if node is broken
+    elif command_parts[1] == 'back':
+        game_state["menu_state"] = "main"
+        show_main_menu()
+    else:
+        print_output("Use 'look around' to survey the area, 'look clue <clue_id>' to examine, or 'back'.")
 
-def end_dialogue():
-    """Resets dialogue state and returns to main menu."""
-    print_output("--- Leaving Conversation ---")
-    game_state["in_dialogue_with"] = None
-    game_state["current_dialogue_node_id"] = None
-    game_state["menu_state"] = "main"
-    show_main_menu()
 
-# --- Action Processing ---
+def handle_talk(command_parts):
+    """Handles the 'talk' command."""
+    if len(command_parts) < 2 or command_parts[1] == 'list':
+         # Simple: list all suspects. Future: list only those present in the location.
+         print_output("--- Suspects ---")
+         for name, data in SUSPECTS.items():
+             status = "(Met)" if game_state["suspect_states"][name]["met"] else ""
+             print_output(f"- {name} ({data['role']}) {status}")
+         print_output("\nEnter 'talk <suspect_name>' to start a conversation, or 'back'.")
+         return
 
-# --- Action Processing ---
+    target_suspect = " ".join(command_parts[1:]).title()
 
-def process_dialogue_action(action_string, current_game_state): # Added current_game_state argument
-    """Parses and executes actions defined in dialogue nodes."""
-    # Removed 'global game_state' line
-    if not action_string:
-        return # No action defined
-
-    print(f"[DEBUG] Processing action: {action_string}") # Optional debug print
-
-    if action_string.startswith("discover_clue"):
-        try:
-            clue_id_to_discover = action_string.split("discover_")[1] # Get the part after "discover_"
-
-            # Check if clue exists in master list (optional safety check)
-            # NOTE: Assumes CLUES_DATA is accessible globally or passed if needed
-            clue_exists = any(clue['id'] == clue_id_to_discover for clue in CLUES_DATA)
-            if not clue_exists:
-                print(f"[DEBUG] Action Error: Clue ID '{clue_id_to_discover}' not found in CLUES_DATA.")
-                return
-
-            # Check if clue is already discovered using the passed dictionary
-            if clue_id_to_discover not in current_game_state["notebook_discovered_clue_ids"]:
-                current_game_state["notebook_discovered_clue_ids"].append(clue_id_to_discover)
-                print_output("   [Notebook Updated]")
-            # else:
-                # print(f"[DEBUG] Clue '{clue_id_to_discover}' was already discovered.")
-
-        except IndexError:
-            print(f"[DEBUG] Action Error: Invalid format for discover_clue action: {action_string}")
-        except Exception as e:
-             # Use current_game_state here too if needed for more complex error handling
-             print(f"[DEBUG] Error processing action '{action_string}': {e}")
-
-    # --- Add more action types later? ---
-    # Example using current_game_state:
-    # elif action_string == "update_alibi":
-    #     suspect_id = current_game_state["in_dialogue_with"]
-    #     node_id = current_game_state["current_dialogue_node_id"]
-    #     npc_text = DIALOGUE_TREES[suspect_id][node_id]['text']
-    #     current_game_state['notebook_suspect_info'][suspect_id]['alibi_statement'] = npc_text
-    #     print_output("   [Notebook Updated - Alibi Noted]")
-
-def talk_to_suspect(suspect):
-    # suspect is a dictionary like {"id": "raffaella", "name": "Raffaella Patrizi", ...}
-    suspect_id = suspect['id']
-    suspect_name = suspect['name']
-
-    print_output(f"\n--- Approaching {suspect_name} ---")
-
-    # Set dialogue state
-    game_state["in_dialogue_with"] = suspect_id
-    game_state["current_dialogue_node_id"] = suspect.get('dialogue_start_node', 'START') # Get start node from suspect data
-    game_state["menu_state"] = "dialogue" # Change game state to dialogue mode
-
-    # Display the first node
-    display_dialogue_node()
-
-# --- Input Handling ---
-def handle_input(cmd):
-    if not game_state["initialized"]:
-        # init_game() # Should already be initialized by start_game()
-        print_output("Error: Game not initialized.")
+    if target_suspect == "Back":
+        game_state["menu_state"] = "main"
+        show_main_menu()
         return
 
-    current_state = game_state["menu_state"]
+    if target_suspect in SUSPECTS:
+        # Check if suspect is 'available' (e.g., in the same location - Phase 2/3 feature)
+        # For Phase 1, assume they are reachable.
+        start_dialogue(target_suspect)
 
-    if current_state == "main":
-        # ... (keep existing logic for main menu: 1, 2, 3, 4)
-        if cmd == "1":
-            game_state["menu_state"] = "room"
-            show_room_menu()
-        elif cmd == "2":
-            # No state change needed for view_notes, it returns to main menu itself
-            open_notebook()
-        elif cmd == "3":
-            game_state["menu_state"] = "accuse"
-            make_accusation()
-        elif cmd == "4":
-            game_state["menu_state"] = "talk"
-            show_suspect_menu()
+    else:
+        print_output(f"You can't talk to '{target_suspect}'. Are they here? Did you spell the name correctly?")
+        # Re-show talk list
+        handle_talk(["talk", "list"])
+
+def handle_inventory(command_parts):
+    """Handles the 'inventory' command."""
+    action = command_parts[1] if len(command_parts) > 1 else "list" # Default to list
+
+    if action == "list":
+        print_output("--- Inventory (Clues Found) ---")
+        if not game_state["inventory"]:
+            print_output("You haven't collected any specific clues yet.")
         else:
-            print_output("Invalid input. Please enter a valid number.")
+            for clue_id in sorted(list(game_state["inventory"])):
+                # Find which location this clue belongs to for context (inefficient, better data structure later)
+                origin_location = "Unknown Location"
+                clue_desc = "Unknown Clue"
+                for loc, clues_in_loc in CLUES.items():
+                    if clue_id in clues_in_loc:
+                        origin_location = loc
+                        clue_desc = clues_in_loc[clue_id].get("description", "No description")
+                        break
+                print_output(f"- {clue_id}: {clue_desc} (Found in {origin_location})")
+        print_output("\nUse 'inventory examine <clue_id>' for details, or 'back'.")
+
+    elif action == "examine" and len(command_parts) > 2:
+        clue_id_to_examine = command_parts[2]
+        if clue_id_to_examine in game_state["inventory"]:
+             # Find the clue details again
+             clue_details = "Details not found (error)."
+             for loc, clues_in_loc in CLUES.items():
+                 if clue_id_to_examine in clues_in_loc:
+                     clue_details = clues_in_loc[clue_id_to_examine].get("details", "No details available.")
+                     break
+             print_output(f"--- Examining {clue_id_to_examine} (from Inventory) ---")
+             print_output(clue_details)
+        else:
+             print_output(f"You don't have the clue '{clue_id_to_examine}' in your inventory.")
+        # Stay in inventory mode
+        print_output("List inventory again, examine another clue, or type 'back'.")
+
+    elif action == "back":
+        game_state["menu_state"] = "main"
+        show_main_menu()
+
+    else:
+         print_output("Use 'inventory list', 'inventory examine <clue_id>', or 'back'.")
+
+
+def handle_accuse(command_parts):
+    """Handles the 'accuse' command."""
+    # Example format: accuse Leo Gallo with Poison for Inheritance
+    if len(command_parts) < 6 or 'with' not in command_parts or 'for' not in command_parts:
+        print_output("Invalid accusation format.")
+        print_output("Use: accuse <Suspect Name> with <Method/Weapon> for <Motive>")
+        print_output("Example: accuse Leo Gallo with Poison for Inheritance")
+        print_output("Type 'back' to cancel accusation.")
+        return
+
+    try:
+        suspect_name_parts = []
+        method_parts = []
+        motive_parts = []
+
+        mode = "suspect" # Modes: suspect, method, motive
+        for i, part in enumerate(command_parts[1:]):
+             if part == 'with' and mode == 'suspect':
+                 mode = "method"
+                 continue
+             elif part == 'for' and mode == 'method':
+                 mode = "motive"
+                 continue
+
+             if mode == "suspect":
+                 suspect_name_parts.append(part)
+             elif mode == "method":
+                 method_parts.append(part)
+             elif mode == "motive":
+                 motive_parts.append(part)
+
+        accused_suspect = " ".join(suspect_name_parts).title()
+        accused_method = " ".join(method_parts)
+        accused_motive = " ".join(motive_parts)
+
+        if not accused_suspect or not accused_method or not accused_motive:
+             raise ValueError("Missing parts of accusation") # Trigger format error below
+
+        if accused_suspect not in SUSPECTS:
+            print_output(f"'{accused_suspect}' is not recognized as a suspect.")
+            return
+
+        print_output(f"\n--- Final Accusation ---")
+        print_output(f"You accuse: {accused_suspect}")
+        print_output(f"Method: {accused_method}")
+        print_output(f"Motive: {accused_motive}")
+        print_output("-" * 26)
+
+        # --- Check against Ground Truth ---
+        # Basic check for Phase 1 - needs more nuance (partial matches?) later
+        correct_murderer = GROUND_TRUTH["murderer"]
+        # Method/Motive matching needs to be flexible (keywords?)
+        # Simple check for now:
+        murderer_match = (accused_suspect == correct_murderer)
+        # This is too strict, needs keyword/semantic matching later
+        method_match = (accused_method.lower() in GROUND_TRUTH["method"].lower())
+        motive_match = (accused_motive.lower() in GROUND_TRUTH["motive"].lower())
+
+        if murderer_match and method_match and motive_match:
+            print_output("\n*** CORRECT! ***")
+            print_output("You have pieced together the truth and exposed the killer.")
+            print_output(f"It was indeed {correct_murderer}, who used {GROUND_TRUTH['method']} because of {GROUND_TRUTH['motive']}.")
+            # End game state or transition to epilogue
+            game_state["menu_state"] = "ended"
+            print_output("\n--- GAME OVER ---")
+        else:
+            print_output("\n*** INCORRECT ***")
+            print_output("Your accusation doesn't match the facts.")
+            if not murderer_match:
+                print_output(f"- The murderer was not {accused_suspect}.")
+            if not method_match:
+                 print_output(f"- The method used was not '{accused_method}'.")
+            if not motive_match:
+                 print_output(f"- The motive was not '{accused_motive}'.")
+
+            print_output("\nThe true killer remains elusive. Keep investigating.")
+            # Return to main menu to allow player to continue
+            game_state["menu_state"] = "main"
             show_main_menu()
 
-    elif current_state == "room":
-        # ... (keep existing logic for room selection)
-        if cmd.isdigit():
-            idx = int(cmd) - 1
-            if 0 <= idx < len(game_state["rooms"]):
-                visit_room(game_state["rooms"][idx]) # visit_room now handles returning to main menu
-            else:
-                print_output("Invalid room selection.")
-                show_room_menu() # Show menu again
+    except Exception as e:
+        print_output("Error processing accusation format.")
+        print_output("Use: accuse <Suspect Name> with <Method/Weapon> for <Motive>")
+        if DEBUG: print(f"DEBUG: Accusation parsing error: {e}")
+        # Stay in accuse mode
+
+
+# --- Dialogue System ---
+
+def start_dialogue(suspect_id):
+    """Initiates dialogue with a suspect."""
+    if suspect_id not in DIALOGUE_TREES:
+        print_output(f"You approach {suspect_id}, but they don't seem to have anything to say right now.")
+        if DEBUG: print(f"DEBUG: No dialogue tree found for {suspect_id}")
+        return
+
+    game_state["menu_state"] = "dialogue"
+    game_state["talking_to"] = suspect_id
+    # Mark suspect as met if not already
+    if not game_state["suspect_states"][suspect_id]["met"]:
+        game_state["suspect_states"][suspect_id]["met"] = True
+        if DEBUG: print(f"DEBUG: Marked {suspect_id} as met.")
+    # Reset to start node or get current node (for resuming later)
+    current_node_id = game_state["suspect_states"][suspect_id].get("dialogue_node", "start")
+    if DEBUG: print(f"DEBUG: Starting dialogue with {suspect_id} at node '{current_node_id}'")
+
+    display_dialogue_node(current_node_id)
+
+
+def display_dialogue_node(node_id=None):
+    """Displays the text and options for the current dialogue node."""
+    suspect_id = game_state["talking_to"]
+    if not suspect_id:
+        if DEBUG: print("DEBUG: Error - Tried to display dialogue node with no suspect selected.")
+        end_dialogue()
+        return
+
+    tree = DIALOGUE_TREES.get(suspect_id, {})
+    if node_id is None:
+        node_id = game_state["suspect_states"][suspect_id].get("dialogue_node", "start")
+
+    node_data = tree.get(node_id)
+
+    if not node_data:
+        print_output(f"[Error: Dialogue node '{node_id}' not found for {suspect_id}. Ending conversation.]")
+        if DEBUG: print(f"DEBUG: Missing node '{node_id}' in tree for {suspect_id}")
+        end_dialogue()
+        return
+
+    # Store current node for state
+    game_state["suspect_states"][suspect_id]["dialogue_node"] = node_id
+
+    # Display node text
+    print_output(f"\n--- {suspect_id} ---")
+    print_output(node_data.get("text", "[Silent response...]"))
+
+    # Display options
+    options = node_data.get("options", {})
+    if options:
+        print_output("\nYour options:")
+        i = 1
+        for key, text in options.items():
+            print_output(f"{i}. {text}")
+            i += 1
+        print_output("\nEnter the number of your choice, or 'goodbye'.")
+    else:
+        # If no options and not explicitly ending, assume it ends
+        if not node_data.get("ends_dialogue", False):
+             print_output("(The conversation seems to be at an end.)")
+             # Automatically end if no options are presented
+             end_dialogue(implicit=True)
+
+
+def end_dialogue(implicit=False):
+    """Ends the current dialogue session."""
+    if not implicit: # Don't print message if implicitly ended by lack of options
+        print_output(f"You end the conversation with {game_state['talking_to']}.")
+    if DEBUG: print(f"DEBUG: Ending dialogue with {game_state['talking_to']}.")
+    game_state["talking_to"] = None
+    game_state["menu_state"] = "main"
+    update_time(5) # Talking takes time
+    show_main_menu()
+
+
+# --- Main Input Handler ---
+
+def handle_input(command):
+    """Processes the player's command."""
+    command = clean_input(command)
+    command_parts = command.split()
+    verb = command_parts[0] if command_parts else ""
+
+    current_state = game_state["menu_state"]
+    if DEBUG: print(f"DEBUG: Handling input '{command}' in state '{current_state}'")
+
+    # Universal commands
+    if verb == "help":
+        display_help()
+        return
+    if verb == "time" and current_state == "main":
+         print_output(f"Current game time: {game_state['current_time']}")
+         return
+    if verb == "quit" or verb == "exit": # Allow quitting
+        print_output("Exiting game. Goodbye.")
+        # In a web context, this doesn't close the tab, just stops interaction.
+        # We might disable the input field or show a final message.
+        document.getElementById('command').disabled = True
+        document.getElementById('submit').disabled = True
+        return
+
+    # State-specific commands
+    if current_state == "main":
+        if verb == "move":
+            game_state["menu_state"] = "move"
+            handle_move(["move", "list"]) # Show available locations initially
+        elif verb == "look":
+            game_state["menu_state"] = "look"
+            handle_look(["look", "around"]) # Look around initially
+        elif verb == "talk":
+            game_state["menu_state"] = "talk"
+            handle_talk(["talk", "list"]) # Show suspects initially
+        elif verb == "inventory":
+            game_state["menu_state"] = "inventory"
+            handle_inventory(["inventory", "list"]) # List inventory initially
+        elif verb == "accuse":
+            game_state["menu_state"] = "accuse"
+            handle_accuse([]) # Show accusation help/format
         else:
-            print_output("Invalid room input. Please enter a number.")
-            show_room_menu() # Show menu again
+            print_output("Unknown command in main menu. Type 'help' for options.")
+            show_main_menu()
+
+    elif current_state == "move":
+        if verb == "back":
+            game_state["menu_state"] = "main"
+            show_main_menu()
+        elif verb == "list":
+             handle_move(["move", "list"])
+        elif len(command_parts) > 0: # Assume the command IS the location
+             handle_move(["move"] + command_parts) # Prepend "move" for the handler
+        else:
+             print_output("Enter a location name to move to, 'list' available locations, or 'back'.")
+
+
+    elif current_state == "look":
+        if verb == "back":
+            game_state["menu_state"] = "main"
+            show_main_menu()
+        elif verb == "around":
+            handle_look(["look", "around"])
+        elif verb == "look" and len(command_parts) > 1: # Allow "look clue_id" directly
+            handle_look(command_parts)
+        elif len(command_parts) == 1 : # Allow just "clue_id" as shorthand for "look clue_id"
+             handle_look(["look", "clue", command_parts[0]])
+        else:
+            print_output("Use 'look around', 'look <clue_id>', or 'back'.")
+
+
+    elif current_state == "talk":
+        if verb == "back":
+            game_state["menu_state"] = "main"
+            show_main_menu()
+        elif verb == "list":
+             handle_talk(["talk", "list"])
+        elif len(command_parts) > 0: # Assume the command IS the suspect name
+             handle_talk(["talk"] + command_parts) # Prepend "talk" for the handler
+        else:
+             print_output("Enter a suspect's name to talk to, 'list' suspects, or 'back'.")
+
+    elif current_state == "inventory":
+         if verb == "back":
+             game_state["menu_state"] = "main"
+             show_main_menu()
+         elif verb == "list":
+             handle_inventory(["inventory", "list"])
+         elif verb == "examine" and len(command_parts) > 1:
+              handle_inventory(command_parts)
+         elif len(command_parts) == 1: # Allow shorthand "clue_id" for examine
+              handle_inventory(["inventory", "examine", command_parts[0]])
+         else:
+             print_output("Use 'inventory list', 'inventory examine <clue_id>', or 'back'.")
 
 
     elif current_state == "accuse":
-        # ... (keep existing logic for accusation)
-        process_accusation(cmd) # process_accusation handles game end or returning to menu
+        if verb == "back":
+            game_state["menu_state"] = "main"
+            show_main_menu()
+        elif verb == "accuse":
+            handle_accuse(command_parts)
+        else:
+            print_output("Invalid command during accusation. Use 'accuse ...' or 'back'.")
 
-    elif current_state == "talk":
-        # ... (keep existing logic for suspect selection)
-         if cmd.isdigit():
-            idx = int(cmd) - 1
-            if 0 <= idx < len(game_state["suspects"]):
-                talk_to_suspect(game_state["suspects"][idx]) # talk_to_suspect now changes state to 'dialogue'
-            else:
-                print_output("Invalid suspect.")
-                show_suspect_menu() # Show menu again
-         else:
-            print_output("Please enter the number of the suspect.")
-            show_suspect_menu() # Show menu again
-
-    # --- Add this new block to handle dialogue input ---
+    # --- New Dialogue Block ---
     elif current_state == "dialogue":
-        suspect_id = game_state["in_dialogue_with"]
-        node_id = game_state["current_dialogue_node_id"]
+        suspect_id = game_state["talking_to"]
+        current_node_id = game_state["suspect_states"][suspect_id]["dialogue_node"]
+        tree = DIALOGUE_TREES.get(suspect_id, {})
+        node_data = tree.get(current_node_id, {})
+        options = node_data.get("options", {})
+        leads_to = node_data.get("leads_to", {})
 
-        if suspect_id is None or node_id is None:
-            print_output("[Error: Unexpectedly not in dialogue. Returning to main menu.]")
+        if verb == "goodbye":
             end_dialogue()
             return
 
         try:
-            node_data = DIALOGUE_TREES[suspect_id][node_id]
-            options = node_data.get('options', [])
+            # Try to parse the command as a choice number
+            choice_num = int(command)
+            if 1 <= choice_num <= len(options):
+                # Valid choice number
+                option_key = list(options.keys())[choice_num - 1] # Get the internal key for the choice
+                next_node_id = leads_to.get(option_key)
 
-            if cmd.isdigit():
-                choice_idx = int(cmd) - 1
-                if 0 <= choice_idx < len(options):
-                    chosen_option = options[choice_idx]
-                    next_node_id = chosen_option['next_node']
-
-                    if next_node_id == 'END':
-                        end_dialogue()
-                    else:
-                        # Move to the next node
-                        game_state["current_dialogue_node_id"] = next_node_id
-                        # Optional: Execute action if defined for the new node
-                        # new_node_data = DIALOGUE_TREES[suspect_id].get(next_node_id, {})
-                        # action = new_node_data.get('action')
-                        # if action:
-                        #     action() # Call the action function
-                        display_dialogue_node() # Display the new node
+                if next_node_id:
+                    if DEBUG: print(f"DEBUG: Dialogue transition: {current_node_id} -> {next_node_id} via choice {choice_num} ('{option_key}')")
+                    display_dialogue_node(next_node_id)
                 else:
-                    print_output("Invalid option number. Please try again.")
-                    # Re-display the current node's options
-                    display_dialogue_node()
+                    # If the chosen option key doesn't lead anywhere defined
+                    print_output("[This line of questioning seems to end here.]")
+                    if DEBUG: print(f"DEBUG: Dialogue option '{option_key}' has no 'leads_to' target from node '{current_node_id}'.")
+                    # Decide if this implicitly ends the dialogue or just returns to the node options
+                    # Let's end it for simplicity now.
+                    end_dialogue(implicit=True) # End implicitly as there's nowhere to go
+
             else:
-                print_output("Please enter the number corresponding to your choice.")
-                # Re-display the current node's options
-                display_dialogue_node()
+                print_output(f"Invalid choice number. Please enter a number between 1 and {len(options)}, or 'goodbye'.")
+                # Re-display the current node's options without re-printing the text
+                # (We need a slight refactor to separate text printing from option printing if we want this perfect)
+                display_dialogue_node() # Re-displaying whole node is okay for now
+
+        except ValueError:
+            # Input was not a number
+            print_output("Please enter the number corresponding to your choice, or 'goodbye'.")
+            # Re-display the current node's options
+            display_dialogue_node() # Re-display whole node
 
         except KeyError:
             print_output(f"[Error: Dialogue node '{node_id}' configuration issue for {suspect_id}. Ending conversation.]")
+            if DEBUG: print(f"DEBUG: KeyError during dialogue processing for node '{current_node_id}', suspect '{suspect_id}'. Check DIALOGUE_TREES.")
             end_dialogue()
     # --- End of new dialogue block ---
 
     else:
         print_output(f"Error: Unknown menu state '{current_state}'")
+        if DEBUG: print(f"DEBUG: Reached unknown menu state: {current_state}")
         # Reset to main menu as a fallback
         game_state["menu_state"] = "main"
         show_main_menu()
 
-# --- Input Bindings ---
+# --- Input Bindings (for HTML/Pyodide) ---
 def on_submit(e):
+    """Callback for when the submit button is clicked."""
     try:
         cmd = document.getElementById('command').value.strip()
-        document.getElementById('command').value = ''
+        document.getElementById('command').value = '' # Clear input field
         if not cmd:
-            return
-        print_output(f"> {cmd}")
+            return # Ignore empty commands
+        print_output(f"\n> {cmd}") # Echo command to output
         handle_input(cmd)
-    except Exception as e:
-        print_output(f"Submission error: {e}")
+    except Exception as err:
+        print_output(f"An error occurred processing your command: {err}")
+        if DEBUG: console.error(f"Python Error: {err}") # Log detailed error to browser console
 
 def on_enter(e):
+    """Callback for when Enter key is pressed in the input field."""
     if e.key == "Enter":
-        on_submit(e)
+        on_submit(e) # Trigger the same action as clicking submit
 
 # --- Start Game ---
 def start_game():
+    """Initializes and starts the game."""
     try:
-        document.getElementById('submit').addEventListener('click', create_proxy(on_submit))
-        document.getElementById('command').addEventListener('keypress', create_proxy(on_enter))
-        init_game()
-    except Exception as e:
-        print_output(f"❌ Startup error: {e}")
+        # Setup input listeners
+        submit_button = document.getElementById('submit')
+        command_input = document.getElementById('command')
 
-start_game()
+        # Use create_proxy to wrap Python functions for JS event listeners
+        submit_proxy = create_proxy(on_submit)
+        enter_proxy = create_proxy(on_enter)
+
+        submit_button.addEventListener('click', submit_proxy)
+        command_input.addEventListener('keypress', enter_proxy)
+
+        # Print introduction and initial state
+        print_output(GAME_INTRODUCTION)
+        # Potentially ask for player name here
+        show_main_menu()
+
+        # Initial focus on command input
+        command_input.focus()
+        if DEBUG: print("DEBUG: Game started, input listeners attached.")
+
+    except Exception as e:
+        print_output(f"Fatal Error during game initialization: {e}")
+        if DEBUG: console.error(f"Initialization Error: {e}")
+
+
+# --- Main execution block (when script is loaded in Pyodide) ---
+# We don't call start_game() directly here.
+# It should be called from the HTML file after Pyodide is ready.
+# Example: In HTML, after pyodide loads: pyodide.runPython(game_code); pyodide.globals.get('start_game')()
+if DEBUG: print("DEBUG: game.py loaded.")
