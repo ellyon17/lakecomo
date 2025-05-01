@@ -198,7 +198,7 @@ def init_game():
 
     # --- Initialize Notebook ---
     game_state["notebook_discovered_clue_ids"] = []
-    game_state["notebook_timeline_entries"] = []
+    game_state["notebook_timeline_entries"] = [] # Ensure this is initialized
     game_state["notebook_suspect_info"] = {}
     # Populate initial suspect info for the notebook
     for sus_data in SUSPECTS_DATA:
@@ -207,7 +207,8 @@ def init_game():
             "name": sus_data['name'],
             "bio": sus_data['bio'],
             "alibi_statement": None, # Player needs to learn this
-            "notes": [] # Player might add notes later, or we log key info here
+            "testimonies": [],      # <<< ADD THIS LINE >>> Initialize empty list
+            "player_notes": []      # <<< ADD THIS LINE >>> Initialize empty list
         }
     # --- End Notebook Init ---
 
@@ -286,6 +287,93 @@ def visit_room(room):
     # Always show the main menu after visiting a room
     game_state["menu_state"] = "main"
     show_main_menu()
+
+# --- Notebook Display Function ---
+def view_notebook():
+    """Displays the contents of the player's detective notebook."""
+    print_output("\n<pre>" + "=" * 30 + " DETECTIVE'S NOTEBOOK " + "=" * 30 + "</pre>") # Using <pre> for better formatting control
+
+    # --- Display Clues ---
+    print_output("\n<pre>" + "-" * 25 + " Clues Found " + "-" * 25 + "</pre>")
+    discovered_clue_ids = game_state.get("notebook_discovered_clue_ids", [])
+
+    if not discovered_clue_ids:
+        print_output("  No clues discovered yet.")
+    else:
+        # Create a quick lookup for location names (improves efficiency)
+        location_names = {room['id']: room['name'] for room in game_state.get("rooms", [])}
+        # Create a quick lookup for clue details
+        all_clues_dict = {clue['id']: clue for clue in game_state.get("clues", [])}
+
+        for clue_id in discovered_clue_ids:
+            clue_data = all_clues_dict.get(clue_id)
+            if clue_data:
+                # Find location name, handle potential missing names gracefully
+                loc_id = clue_data.get('location_id', 'Unknown Location')
+                loc_name = location_names.get(loc_id, loc_id.replace('_', ' ').title()) # Use ID if name not found, format it slightly
+
+                origin = clue_data.get('origin', 'Unknown Origin')
+                desc = clue_data.get('description', 'No description available.')
+                clue_type = clue_data.get('type', 'Unknown Type') # Get clue type
+
+                # Format output
+                print_output(f"  * <b>[{clue_id}] ({clue_type})</b>: {desc}")
+                print_output(f"    <span style='color: #aaa;'>  (Location: {loc_name}, Origin: {origin})</span>") # Dimmed metadata
+                print_output("") # Add a blank line for spacing
+            else:
+                print_output(f"  * Error: Details for clue ID '{clue_id}' not found.")
+
+    # --- Display Suspect Profiles ---
+    print_output("\n<pre>" + "-" * 25 + " Suspect Profiles " + "-" * 25 + "</pre>")
+    suspect_info = game_state.get("notebook_suspect_info", {})
+
+    if not suspect_info:
+        print_output("  No suspect information available.")
+    else:
+        for suspect_id, info in suspect_info.items():
+            print_output(f"\n<u><b>{info.get('name', suspect_id.title())}</b></u>")
+            print_output(f"  Bio: {info.get('bio', 'N/A')}")
+
+            # Display Alibi (will be populated in Step 2)
+            alibi = info.get('alibi_statement')
+            if alibi:
+                print_output(f"  Alibi: \"{alibi}\"")
+
+            # Display Testimonies (will be populated in Step 2)
+            testimonies = info.get('testimonies', [])
+            if testimonies:
+                print_output("  Recorded Testimonies:")
+                for testimony in testimonies:
+                    print_output(f"    - \"{testimony}\"")
+
+            # Display Player Notes (will be populated in Step 4)
+            player_notes = info.get('player_notes', [])
+            if player_notes:
+                print_output("  Your Notes:")
+                for note in player_notes:
+                     print_output(f"    - {note}")
+
+            print_output("-" * 10) # Separator between suspects
+
+    # --- Display Timeline ---
+    print_output("\n<pre>" + "-" * 25 + " Timeline Reconstruction " + "-" * 25 + "</pre>")
+    timeline_entries = game_state.get("notebook_timeline_entries", [])
+
+    if not timeline_entries:
+        print_output("  Timeline not yet reconstructed.")
+    else:
+        for entry in timeline_entries:
+            print_output(f"  - {entry}")
+
+    print_output("\n<pre>" + "=" * 78 + "</pre>") # End of notebook marker
+    print_output("Closing Notebook...")
+
+    # IMPORTANT: Always return to the main menu after viewing the notebook
+    game_state["menu_state"] = "main" # Ensure state is correct
+    show_main_menu()
+
+# --- End of Notebook Display Function ---
+
 
 def make_accusation():
     print_output("\nWho do you accuse as the murderer?")
@@ -378,15 +466,13 @@ def end_dialogue():
 
 # --- Action Processing ---
 
-# --- Action Processing ---
-
 def process_dialogue_action(action_string, current_game_state): # Added current_game_state argument
     """Parses and executes actions defined in dialogue nodes."""
     # Removed 'global game_state' line
     if not action_string:
         return # No action defined
 
-    print(f"[DEBUG] Processing action: {action_string}") # Optional debug print
+#    print(f"[DEBUG] Processing action: {action_string}") # Optional debug print
 
     if action_string.startswith("discover_clue"):
         try:
@@ -446,13 +532,11 @@ def handle_input(cmd):
     current_state = game_state["menu_state"]
 
     if current_state == "main":
-        # ... (keep existing logic for main menu: 1, 2, 3, 4)
         if cmd == "1":
             game_state["menu_state"] = "room"
             show_room_menu()
         elif cmd == "2":
-            # No state change needed for view_notes, it returns to main menu itself
-            open_notebook()
+            view_notebook()
         elif cmd == "3":
             game_state["menu_state"] = "accuse"
             make_accusation()
